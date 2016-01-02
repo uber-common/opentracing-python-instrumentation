@@ -65,7 +65,7 @@ class AbstractRequestWrapper(object):
     @property
     def caller_name(self):
         for header in config.CONFIG.caller_name_headers:
-            caller = self.headers.get(header, None)
+            caller = self.headers.get(header.lower(), None)
             if caller is not None:
                 return caller
         return None
@@ -97,3 +97,114 @@ class AbstractRequestWrapper(object):
     @property
     def operation(self):
         return self.method
+
+
+class TornadoRequestWrapper(AbstractRequestWrapper):
+    """
+    Wraps tornado.httputils.HTTPServerRequest and exposes several properties
+    used by the tracing methods.
+    """
+
+    def __init__(self, request):
+        self.request = request
+
+    @property
+    def full_url(self):
+        return self.request.full_url()
+
+    @property
+    def headers(self):
+        return self.request.headers
+
+    @property
+    def method(self):
+        return self.request.method
+
+    @property
+    def remote_ip(self):
+        return self.request.remote_ip
+
+
+class WSGIRequestWrapper(AbstractRequestWrapper):
+    """
+    Wraps WSGI environment and exposes several properties
+    used by the tracing methods.
+    """
+
+    def __init__(self, wsgi_environ, headers):
+        self.wsgi_environ = wsgi_environ
+        self._headers = headers
+
+    @classmethod
+    def from_wsgi_environ(cls, wsgi_environ):
+        instance = cls(wsgi_environ=wsgi_environ,
+                       headers=cls._parse_wsgi_headers(wsgi_environ))
+        return instance
+
+    @staticmethod
+    def _parse_wsgi_headers(wsgi_environ):
+        """
+        HTTP headers are presented in WSGI environment with 'HTTP_' prefix.
+        This method finds those headers, removes the prefix, converts
+        underscores to dashes, and converts to lower case.
+
+        :param wsgi_environ:
+        :return: returns a dictionary of headers
+        """
+        prefix = 'HTTP_'
+        p_len = len(prefix)
+        headers = {
+            key[p_len:].replace('_', '-').lower():
+                val for (key, val) in wsgi_environ.iteritems()
+            if key.startswith(prefix)}
+        return headers
+
+    @property
+    def full_url(self):
+        """
+        Taken from http://legacy.python.org/dev/peps/pep-3333/#url-reconstruction
+
+        :return: Reconstructed URL from WSGI environment.
+        """
+        from urllib import quote
+
+        environ = self.wsgi_environ
+        url = environ['wsgi.url_scheme'] + '://'
+
+        if environ.get('HTTP_HOST'):
+            url += environ['HTTP_HOST']
+        else:
+            url += environ['SERVER_NAME']
+
+            if environ['wsgi.url_scheme'] == 'https':
+                if environ['SERVER_PORT'] != '443':
+                    url += ':' + environ['SERVER_PORT']
+            else:
+                if environ['SERVER_PORT'] != '80':
+                    url += ':' + environ['SERVER_PORT']
+
+        url += quote(environ.get('SCRIPT_NAME', ''))
+        url += quote(environ.get('PATH_INFO', ''))
+        if environ.get('QUERY_STRING'):
+            url += '?' + environ['QUERY_STRING']
+        return url
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @property
+    def method(self):
+        return self.wsgi_environ.get('REQUEST_METHOD')
+
+    @property
+    def remote_ip(self):
+        return self.wsgi_environ.get('REMOTE_ADDR', None)
+
+    @property
+    def remote_port(self):
+        return self.wsgi_environ.get('REMOTE_PORT', None)
+
+    @property
+    def server_port(self):
+        return self.wsgi_environ.get('SERVER_PORT', None)

@@ -28,7 +28,7 @@ from tornado.httputil import HTTPHeaders
 import opentracing
 from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
 from opentracing_instrumentation.config import CONFIG
-from opentracing_instrumentation.trace_context import TraceContextManager
+from opentracing_instrumentation.request_context import RequestContextManager
 
 
 @contextlib.contextmanager
@@ -83,8 +83,6 @@ def do_test(scheme='http', root_span=True):
         span.finish = mock.MagicMock()
 
         headers = {'TRACE-ID': '123'}
-        # endpoint = Endpoint(ipv4='localhost', port=9777,
-        #                     service_name='New New York')
 
         with mock.patch('urllib2.AbstractHTTPHandler.do_open',
                         return_value=Response()), \
@@ -105,7 +103,7 @@ def do_test(scheme='http', root_span=True):
                 with mock.patch.object(current_span,
                                        'start_child',
                                        return_value=span) as start_child:
-                    with TraceContextManager(current_span):
+                    with RequestContextManager(current_span):
                         resp = urllib2.urlopen(request)
                         start_child.assert_called_once_with(
                             operation_name='GET:antiquing')

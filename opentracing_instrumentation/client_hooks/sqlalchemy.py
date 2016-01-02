@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import logging
 
 import opentracing
-from ..trace_context import get_current_span
+from ..request_context import get_current_span
 from ._singleton import singleton
 
 log = logging.getLogger(__name__)

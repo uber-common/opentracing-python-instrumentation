@@ -22,11 +22,54 @@ from __future__ import absolute_import
 import threading
 
 
-class TraceContextManager(object):
+class RequestContextManager(object):
     """A context manager that saves tracing span in per-thread state globally.
 
-    Intended for use with Tornado's StackContext, or can be used directly
-    as a context manager inside uWSGI middleware in clay.
+    Intended for use with Tornado's StackContext or as context manager
+    in a WSGI middleware.
+
+    ## Usage with Tornado StackContext
+
+    Suppose you have a method `handle_request(request)` in the http server.
+    Instead of calling it directly, use a wrapper:
+
+    .. code-block:: python
+
+        @tornado.gen.coroutine
+        def handle_request_wrapper(request, actual_handler, *args, **kwargs)
+
+            request_wrapper = TornadoRequestWrapper(request=request)
+            span = http_server.before_request(request=request_wrapper)
+
+            mgr = lambda: RequestContextManager(span)
+            with tornado.stack_context.StackContext(mgr):
+                return actual_handler(*args, **kwargs)
+
+    ## Usage with WSGI middleware:
+
+    .. code-block:: python
+
+        def create_wsgi_tracing_middleware(other_wsgi):
+
+            def wsgi_tracing_middleware(environ, start_response):
+                request = WSGIRequestWrapper.from_wsgi_environ(environ)
+                span = before_request(request=request, tracer=tracer)
+
+                # Wrapper around the real start_response object to log
+                # additional information to opentracing Span
+                def start_response_wrapper(status, response_headers,
+                                           exc_info=None):
+                    if exc_info is not None:
+                        span.add_tag('error', str(exc_info))
+                    span.finish()
+
+                    return start_response(status, response_headers)
+
+                with RequestContextManager(span=span):
+                    return other_wsgi(environ, start_response_wrapper)
+
+            return wsgi_tracing_middleware
+
     """
 
     _state = threading.local()
@@ -59,4 +102,4 @@ def get_current_span():
     """
     :return: Current span associated with the current stack context, or None.
     """
-    return TraceContextManager.current_span()
+    return RequestContextManager.current_span()

@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import logging
 
 from tornado.httputil import HTTPHeaders
-from opentracing_instrumentation.trace_context import get_current_span
+from opentracing_instrumentation.request_context import get_current_span
 from opentracing_instrumentation.http_client import AbstractRequestWrapper
 from opentracing_instrumentation.http_client import before_http_request
 from opentracing_instrumentation.http_client import split_host_and_port

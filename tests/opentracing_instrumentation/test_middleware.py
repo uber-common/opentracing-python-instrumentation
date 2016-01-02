@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 import unittest
 import mock
+from opentracing_instrumentation.http_server import TornadoRequestWrapper
 import tornado.httputil
 import opentracing
 from opentracing.ext import tags
@@ -98,19 +99,30 @@ class AbstractRequestWrapperTest(unittest.TestCase):
     def test_caller_name(self):
         request = http_server.AbstractRequestWrapper()
         assert request.caller_name is None
-        backup = config.CONFIG.caller_name_headers
-        config.CONFIG.caller_name_headers = ['caller']
-        headers = tornado.httputil.HTTPHeaders({'caller': 'test-caller'})
-        with mock.patch('opentracing_instrumentation.http_server'
-                        '.AbstractRequestWrapper.headers',
-                        new_callable=mock.PropertyMock) as headers_prop:
-            try:
+        with mock.patch.object(config.CONFIG, 'caller_name_headers',
+                               ['caller']):
+            headers = tornado.httputil.HTTPHeaders({'caller': 'test-caller'})
+            with mock.patch('opentracing_instrumentation.http_server'
+                            '.AbstractRequestWrapper.headers',
+                            new_callable=mock.PropertyMock) as headers_prop:
                 headers_prop.return_value = headers
                 assert request.caller_name == 'test-caller'
                 headers_prop.return_value = {}
                 assert request.caller_name is None
-            finally:
-                config.CONFIG.caller_name_headers = backup
+
+
+class TornadoRequestWrapperTest(unittest.TestCase):
+    def test_all(self):
+        request = mock.MagicMock()
+        request.full_url = mock.MagicMock(return_value='sample full url')
+        request.headers = {'a': 'b'}
+        request.method = 'sample method'
+        request.remote_ip = 'sample remote ip'
+        wrapper = TornadoRequestWrapper(request)
+        assert 'sample full url' == wrapper.full_url
+        assert {'a': 'b'} == wrapper.headers
+        assert 'sample method' == wrapper.method
+        assert 'sample remote ip' == wrapper.remote_ip
 
 
 def find_tag(span, key):

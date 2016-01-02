@@ -24,8 +24,8 @@ import functools
 import tornado.stack_context
 from tornado import gen
 from tornado.testing import AsyncTestCase, gen_test
-from opentracing_instrumentation.trace_context import get_current_span
-from opentracing_instrumentation.trace_context import TraceContextManager
+from opentracing_instrumentation.request_context import get_current_span
+from opentracing_instrumentation.request_context import RequestContextManager
 
 
 class TornadoTraceContextTest(AsyncTestCase):
@@ -56,12 +56,12 @@ class TornadoTraceContextTest(AsyncTestCase):
         yield run_coroutine_with_span(span2, nested, span1, span2)
 
     def test_no_span(self):
-        ctx = TraceContextManager(span='x')
+        ctx = RequestContextManager(span='x')
         assert ctx._span == 'x'
-        assert TraceContextManager.current_span() is None
+        assert RequestContextManager.current_span() is None
 
 
-def run_coroutine_with_span(span, func, *args, **kwargs):
+def run_coroutine_with_span(span, coro, *args, **kwargs):
     """Wrap the execution of a Tornado coroutine func in a tracing span.
 
     This makes the span available through the get_current_span() function.
@@ -71,6 +71,6 @@ def run_coroutine_with_span(span, func, *args, **kwargs):
     :param args: Positional args to func, if any.
     :param kwargs: Keyword args to func, if any.
     """
-    mgr = functools.partial(TraceContextManager, span)
+    mgr = lambda: RequestContextManager(span)
     with tornado.stack_context.StackContext(mgr):
-        return func(*args, **kwargs)
+        return coro(*args, **kwargs)
