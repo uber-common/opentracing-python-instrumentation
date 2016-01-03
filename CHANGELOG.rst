@@ -3,10 +3,10 @@
 History
 -------
 
-0.1.1 (unreleased)
+0.1.1 (2016-01-02)
 ------------------
 
-- Nothing changed yet.
+- Use findpackages
 
 
 0.1.0 (2016-01-02)

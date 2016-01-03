@@ -1,9 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 setup(
     name='opentracing_instrumentation',
-    version='0.1.1.dev0',
+    version='0.1.1',
     author='Yuri Shkuro',
     author_email='ys@uber.com',
     description='Tracing Instrumentation using OpenTracing API',
@@ -18,7 +18,7 @@ setup(
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
-    packages=['opentracing_instrumentation'],
+    packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
     platforms='any',
     install_requires=[
