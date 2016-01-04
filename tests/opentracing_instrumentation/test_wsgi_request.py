@@ -86,4 +86,5 @@ def test_caller():
     with mock.patch.object(config.CONFIG, 'caller_name_headers',
                            ['XXX', 'Custom-Caller-Header']):
         request = WSGIRequestWrapper.from_wsgi_environ(environ)
+        # header XXX is earlier in the list ==> higher priority
         assert request.caller_name == 'DOOP'
