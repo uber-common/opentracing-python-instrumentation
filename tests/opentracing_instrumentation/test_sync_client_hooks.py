@@ -87,7 +87,7 @@ def do_test(scheme='http', root_span=True):
         with mock.patch('urllib2.AbstractHTTPHandler.do_open',
                         return_value=Response()), \
                 mock.patch.object(opentracing.tracer,
-                                  'marshal_trace_context_str_dict',
+                                  'trace_context_to_text',
                                   return_value=(headers, None)):
 
             if root_span:

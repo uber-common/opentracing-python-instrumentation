@@ -30,7 +30,7 @@ def before_request(request, tracer=None):
         tracer = opentracing.tracer
 
     operation = request.operation
-    context = tracer.unmarshal_trace_context_str_dict(
+    context = tracer.trace_context_from_text(
         trace_context_id=request.headers,
         trace_attributes=request.headers
     )

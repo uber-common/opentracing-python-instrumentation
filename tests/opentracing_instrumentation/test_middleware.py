@@ -49,7 +49,7 @@ def test_middleware(with_peer_tags):
     span = mock.MagicMock()
     with mock.patch.object(tracer, 'start_trace',
                            return_value=span) as start_trace, \
-            mock.patch.object(tracer, 'unmarshal_trace_context_str_dict',
+            mock.patch.object(tracer, 'trace_context_from_text',
                               return_value=None):
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2
@@ -65,7 +65,7 @@ def test_middleware(with_peer_tags):
     context = mock.MagicMock()
     with mock.patch.object(tracer, 'join_trace',
                            return_value=span) as join_trace, \
-            mock.patch.object(tracer, 'unmarshal_trace_context_str_dict',
+            mock.patch.object(tracer, 'trace_context_from_text',
                               return_value=context):
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2

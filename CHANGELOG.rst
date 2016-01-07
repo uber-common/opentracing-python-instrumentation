@@ -6,7 +6,7 @@ History
 0.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Upgrade to OopenTracing API 0.4.x
 
 
 0.1.1 (2016-01-02)

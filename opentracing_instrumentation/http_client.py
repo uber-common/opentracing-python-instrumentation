@@ -56,7 +56,7 @@ def before_http_request(request, current_span_extractor):
     if port:
         span.add_tag(tags.PEER_PORT, port)
 
-    h_ctx, h_attr = opentracing.tracer.marshal_trace_context_str_dict(
+    h_ctx, h_attr = opentracing.tracer.trace_context_to_text(
         trace_context=span.trace_context)
     for key, value in h_ctx.iteritems():
         request.add_header(key, value)
