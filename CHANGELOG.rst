@@ -6,7 +6,7 @@ History
 0.2.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add support for mysql-python, with a general framework for PEP-249 drivers
 
 
 0.2.0 (2016-01-06)

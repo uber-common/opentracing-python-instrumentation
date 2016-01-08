@@ -24,7 +24,8 @@ setup(
     install_requires=[
         'futures',
         'tornado>=4.1',
-        'opentracing>=0.4.0,<1.0.0',
+        'contextlib2',
+        'opentracing>=0.5.0,<1.0.0',
     ],
     extras_require={
         'tests': [
