@@ -3,7 +3,7 @@
 History
 -------
 
-0.3.1 (unreleased)
+0.3.1 (2016-01-08)
 ------------------
 
 - Add support for mysql-python, with a general framework for PEP-249 drivers
