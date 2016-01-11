@@ -23,6 +23,7 @@ setup(
     platforms='any',
     install_requires=[
         'futures',
+        'wrapt',
         'tornado>=4.1',
         'contextlib2',
         'opentracing>=0.5.0,<1.0.0',

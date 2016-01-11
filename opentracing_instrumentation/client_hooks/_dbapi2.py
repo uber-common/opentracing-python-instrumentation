@@ -19,14 +19,18 @@
 # THE SOFTWARE.
 from __future__ import absolute_import
 import contextlib2
+import wrapt
 from opentracing_instrumentation import get_current_span
 from ..local_span import func_span
 
 # Utils for instrumenting DB API v2 compatible drivers.
 # PEP-249 - https://www.python.org/dev/peps/pep-0249/
 
+_BEGIN = 'begin-trans'
 _COMMIT = 'commit'
 _ROLLBACK = 'rollback'
+_TRANS_TAGS = [_BEGIN, _COMMIT, _ROLLBACK]
+
 NO_ARG = object()
 
 
@@ -46,7 +50,7 @@ def db_span(sql_statement,
 
     statement = sql_statement.strip()
     add_sql_tag = True
-    if sql_statement == _COMMIT or sql_statement == _ROLLBACK:
+    if sql_statement in _TRANS_TAGS:
         operation = sql_statement
         add_sql_tag = False
     else:
@@ -106,12 +110,12 @@ class ConnectionFactory(object):
                 connect_params=connect_params)
 
 
-class ConnectionWrapper(object):
+class ConnectionWrapper(wrapt.ObjectProxy):
     def __init__(self, connection, module_name, connect_params):
+        super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._connection = connection
         self._module_name = module_name
         self._connect_params = connect_params
-        object.__setattr__(self, 'close', connection.close)
 
     def cursor(self, *args, **kwargs):
         return CursorWrapper(
@@ -119,6 +123,10 @@ class ConnectionWrapper(object):
             module_name=self._module_name,
             connect_params=self._connect_params,
             cursor_params=(args, kwargs) if args or kwargs else None)
+
+    def begin(self):
+        with db_span(sql_statement=_BEGIN, module_name=self._module_name):
+            return self._connection.begin()
 
     def commit(self):
         with db_span(sql_statement=_COMMIT, module_name=self._module_name):
@@ -162,24 +170,16 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
             return self._connection.__exit__(exc, value, tb)
 
 
-class CursorWrapper(object):
+class CursorWrapper(wrapt.ObjectProxy):
     def __init__(self, cursor, module_name,
                  connect_params=None, cursor_params=None):
+        super(CursorWrapper, self).__init__(wrapped=cursor)
         self._cursor = cursor
         self._module_name = module_name
         self._connect_params = connect_params
         self._cursor_params = cursor_params
-        object.__setattr__(self, 'fetchone', cursor.fetchone)
-        object.__setattr__(self, 'fetchmany', cursor.fetchmany)
-        object.__setattr__(self, 'fetchall', cursor.fetchall)
-        # We could also start a span to capture the life time of the cursor
-        object.__setattr__(self, 'close', cursor.close)
-        if hasattr(cursor, 'nextset'):
-            object.__setattr__(self, 'nextset', cursor.nextset)
-        if hasattr(cursor, 'setinputsizes'):
-            object.__setattr__(self, 'setinputsizes', cursor.setinputsizes)
-        if hasattr(cursor, 'setoutputsizes'):
-            object.__setattr__(self, 'setoutputsizes', cursor.setoutputsizes)
+        # We could also start a span now and then override close() to capture
+        # the life time of the cursor
 
     def execute(self, sql, params=NO_ARG):
         with db_span(sql_statement=sql,
