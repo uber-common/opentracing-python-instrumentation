@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='opentracing_instrumentation',
-    version='0.3.3.dev0',
+    version='0.3.3',
     author='Yuri Shkuro',
     author_email='ys@uber.com',
     description='Tracing Instrumentation using OpenTracing API',
@@ -26,7 +26,7 @@ setup(
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
-        'opentracing>=0.5.0,<1.0.0',
+        'opentracing>=0.6.1,<0.7.0',
     ],
     extras_require={
         'tests': [

@@ -3,10 +3,10 @@
 History
 -------
 
-0.3.3 (unreleased)
+0.3.3 (2016-01-11)
 ------------------
 
-- Nothing changed yet.
+- Set upper bound on opentracing version
 
 
 0.3.2 (2016-01-11)
