@@ -3,7 +3,7 @@
 History
 -------
 
-0.3.2 (unreleased)
+0.3.2 (2016-01-11)
 ------------------
 
 - Use wrapt.ObjectProxy to ensure all methods from wrapped connection/cursor are exposed
