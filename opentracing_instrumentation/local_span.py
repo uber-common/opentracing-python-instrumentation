@@ -43,15 +43,11 @@ def func_span(func, tags=None):
     span = get_current_span()
 
     @contextlib2.contextmanager
-    def dummy_ctx_mgr():
-        yield
+    def empty_ctx_mgr():
+        yield None
 
     if span is None:
-        return dummy_ctx_mgr
+        return empty_ctx_mgr()
 
     # TODO convert func to a proper name: module:class.func
-    child = span.start_child(operation_name=str(func))
-    if tags:
-        for k, v in tags.iteritems():
-            child.add_tag(k, v)
-    return child
+    return span.start_child(operation_name=str(func), tags=tags)

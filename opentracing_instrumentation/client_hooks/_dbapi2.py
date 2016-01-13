@@ -43,10 +43,10 @@ def db_span(sql_statement,
 
     @contextlib2.contextmanager
     def empty_ctx_mgr():
-        yield
+        yield None
 
     if span is None:
-        return empty_ctx_mgr
+        return empty_ctx_mgr()
 
     statement = sql_statement.strip()
     add_sql_tag = True
@@ -96,12 +96,14 @@ class ConnectionFactory(object):
 
     def __call__(self, *args, **kwargs):
         safe_kwargs = kwargs
-        if 'passwd' in safe_kwargs or 'password' in safe_kwargs:
+        if 'passwd' in kwargs or 'password' in kwargs or 'conv' in kwargs:
             safe_kwargs = dict(kwargs)
             if 'passwd' in safe_kwargs:
                 del safe_kwargs['passwd']
             if 'password' in safe_kwargs:
                 del safe_kwargs['password']
+            if 'conv' in safe_kwargs:  # don't log conversion functions
+                del safe_kwargs['conv']
         connect_params = (args, safe_kwargs) if args or safe_kwargs else None
         with func_span(self._connect_func_name):
             return self._wrapper_ctor(
