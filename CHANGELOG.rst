@@ -3,10 +3,10 @@
 History
 -------
 
-0.3.4 (unreleased)
+0.3.4 (2016-01-13)
 ------------------
 
-- Nothing changed yet.
+- Bug fix for empty context manager when there is no parent span.
 
 
 0.3.3 (2016-01-11)
