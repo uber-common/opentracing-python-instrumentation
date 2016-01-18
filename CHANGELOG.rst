@@ -3,7 +3,7 @@
 History
 -------
 
-0.3.5 (unreleased)
+0.3.5 (2016-01-17)
 ------------------
 
 - Upgrade to latest OpenTracing (change add_tag to set_tag)
