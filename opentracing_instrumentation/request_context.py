@@ -60,7 +60,7 @@ class RequestContextManager(object):
                 def start_response_wrapper(status, response_headers,
                                            exc_info=None):
                     if exc_info is not None:
-                        span.add_tag('error', str(exc_info))
+                        span.error('exception', exc_info)
                     span.finish()
 
                     return start_response(status, response_headers)

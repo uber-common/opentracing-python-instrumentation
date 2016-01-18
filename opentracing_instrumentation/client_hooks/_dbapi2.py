@@ -64,11 +64,11 @@ def db_span(sql_statement,
     if add_sql_tag:
         tags['sql'] = statement
     if sql_parameters:
-        tags['sql.params'] = str(sql_parameters)
+        tags['sql.params'] = sql_parameters
     if connect_params:
-        tags['sql.conn'] = str(connect_params)
+        tags['sql.conn'] = connect_params
     if cursor_params:
-        tags['sql.cursor'] = str(cursor_params)
+        tags['sql.cursor'] = cursor_params
 
     return span.start_child(
         operation_name='%s:%s' % (module_name, operation),
@@ -89,8 +89,7 @@ class ConnectionFactory(object):
             self._connect_func_name = '%s:%s' % (module_name,
                                                  connect_func.__name__)
         else:
-            self._connect_func_name = '%s:%s' % (module_name,
-                                                 str(connect_func))
+            self._connect_func_name = '%s:%s' % (module_name, connect_func)
         self._wrapper_ctor = conn_wrapper_ctor \
             if conn_wrapper_ctor is not None else ConnectionWrapper
 

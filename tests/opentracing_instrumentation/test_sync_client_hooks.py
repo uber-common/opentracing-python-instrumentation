@@ -79,7 +79,7 @@ def do_test(scheme='http', root_span=True):
                 return None
 
         span = mock.MagicMock()
-        span.add_tag = mock.MagicMock()
+        span.set_tag = mock.MagicMock()
         span.finish = mock.MagicMock()
 
         headers = {'TRACE-ID': '123'}
@@ -109,7 +109,7 @@ def do_test(scheme='http', root_span=True):
                             operation_name='GET:antiquing')
 
         assert resp is not None
-        assert span.add_tag.call_count >= 2
+        assert span.set_tag.call_count >= 2
         assert span.__enter__.call_count == 1
         assert span.__exit__.call_count == 1, 'ensure finish() was called'
 

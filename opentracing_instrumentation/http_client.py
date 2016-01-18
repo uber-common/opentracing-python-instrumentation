@@ -46,15 +46,15 @@ def before_http_request(request, current_span_extractor):
     else:
         span = parent_span.start_child(operation_name=op)
 
-    span.add_tag('server.http.url', request.full_url)
+    span.set_tag('server.http.url', request.full_url)
     service_name = request.service_name
     host, port = request.host_port
     if service_name:
-        span.add_tag(tags.PEER_SERVICE, service_name)
+        span.set_tag(tags.PEER_SERVICE, service_name)
     if host:
-        span.add_tag(tags.PEER_HOST_IPV4, host)
+        span.set_tag(tags.PEER_HOST_IPV4, host)
     if port:
-        span.add_tag(tags.PEER_PORT, port)
+        span.set_tag(tags.PEER_PORT, port)
 
     h_ctx, h_attr = opentracing.tracer.trace_context_to_text(
         trace_context=span.trace_context)

@@ -26,7 +26,7 @@ setup(
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
-        'opentracing>=0.6.1,<0.7.0',
+        'opentracing>=0.6.3,<0.7.0',
     ],
     extras_require={
         'tests': [

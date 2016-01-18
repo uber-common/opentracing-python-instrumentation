@@ -56,7 +56,7 @@ def install_patches():
         else:
             span = get_current_span().start_child(operation_name=operation)
         if statement:
-            span.add_tag('sql', statement)
+            span.set_tag('sql', statement)
         context.opentracing_span = span
 
     @event.listens_for(Engine, 'after_cursor_execute')

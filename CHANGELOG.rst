@@ -6,7 +6,9 @@ History
 0.3.5 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Upgrade to latest OpenTracing (change add_tag to set_tag)
+- Add decorators for functions and Tornado coroutines
+- Clean-up premature conversion to str and use span.error() for reporting errors
 
 
 0.3.4 (2016-01-13)

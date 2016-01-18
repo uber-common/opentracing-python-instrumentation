@@ -53,17 +53,17 @@ def install_patches():
 
             # use span as context manager so that its finish() method is called
             with span:
-                span.add_tag('http.url', fullurl)
+                span.set_tag('http.url', fullurl)
                 if host:
-                    span.add_tag(tags.PEER_HOST_IPV4, host)
+                    span.set_tag(tags.PEER_HOST_IPV4, host)
                 if port:
-                    span.add_tag(tags.PEER_PORT, port)
+                    span.set_tag(tags.PEER_PORT, port)
                 # TODO add callee service name
                 # TODO add headers to propagate trace
                 # cannot use super here, this is an old style class
                 fileobj = urllib.FancyURLopener.open(self, fullurl, data)
                 if fileobj.getcode() is not None:
-                    span.add_tag('status_code', str(fileobj.getcode()))
+                    span.set_tag('status_code', fileobj.getcode())
 
             return fileobj
 

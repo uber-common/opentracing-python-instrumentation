@@ -54,11 +54,11 @@ def test_middleware(with_peer_tags):
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2
         start_trace.assert_called_with(operation_name='my-test')
-        span.add_tag.assert_any_call('client.http.url', request.full_url)
+        span.set_tag.assert_any_call('client.http.url', request.full_url)
         if with_peer_tags:
-            span.add_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
-            span.add_tag.assert_any_call(tags.PEER_PORT, 12345)
-            span.add_tag.assert_any_call(tags.PEER_SERVICE, 'test_middleware')
+            span.set_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
+            span.set_tag.assert_any_call(tags.PEER_PORT, 12345)
+            span.set_tag.assert_any_call(tags.PEER_SERVICE, 'test_middleware')
 
     # now test server when it looks like there is a trace in the headers
     span = mock.MagicMock()
@@ -71,11 +71,11 @@ def test_middleware(with_peer_tags):
         assert span == span2
         join_trace.assert_called_with(operation_name='my-test',
                                       parent_trace_context=context)
-        span.add_tag.assert_any_call('client.http.url', request.full_url)
+        span.set_tag.assert_any_call('client.http.url', request.full_url)
         if with_peer_tags:
-            span.add_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
-            span.add_tag.assert_any_call(tags.PEER_PORT, 12345)
-            span.add_tag.assert_any_call(tags.PEER_SERVICE, 'test_middleware')
+            span.set_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
+            span.set_tag.assert_any_call(tags.PEER_PORT, 12345)
+            span.set_tag.assert_any_call(tags.PEER_SERVICE, 'test_middleware')
 
 
 class AbstractRequestWrapperTest(unittest.TestCase):
