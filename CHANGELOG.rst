@@ -3,10 +3,10 @@
 History
 -------
 
-0.3.6 (unreleased)
+0.3.6 (2016-01-20)
 ------------------
 
-- Nothing changed yet.
+- Merge traced_function/traced_coroutine into a single decorator, with custom on-start hook
 
 
 0.3.5 (2016-01-17)

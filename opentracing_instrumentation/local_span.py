@@ -18,9 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from __future__ import absolute_import
+import functools
 import contextlib2
-import wrapt
 import tornado.stack_context
+import tornado.concurrent
 from . import get_current_span, RequestContextManager
 
 
@@ -55,66 +56,78 @@ def func_span(func, tags=None):
     return span.start_child(operation_name=str(func), tags=tags)
 
 
-def traced_function(operation_name, **tags):
+def traced_function(func=None, name=None, on_start=None):
     """
-    A decorator that enables tracing of the wrapped function provided there
-    is a parent span already established. Should not be used with Tornado
-    coroutines because the span is finished as soon as the wrapped function
-    returns a result, which in case of a coroutine will be an incomplete
-    future. For coroutine use `traced_coroutine` decorator instead.
+    A decorator that enables tracing of the wrapped function or
+    Tornado co-routine provided there is a parent span already established.
 
-    :param operation_name: used as the name of the child span
-    :param tags: optional tags that can be passed to the new child span
+    .. code-block:: python
+
+        @traced_function
+        def my_function1(arg1, arg2=None)
+            ...
+
+    :param func: decorated function or Tornado co-routine
+    :param name: optional name to use as the Span.operation_name.
+        If not provided, func.__name__ will be used.
+    :param on_start: an optional callback to be executed once the child span
+        is started, but before the decorated function is called. It can be
+        used to set any additional tags on the span, perhaps by inspecting
+        the decorated function arguments. The callback must have a signature
+        `(span, *args, *kwargs)`, where the last two collections are the
+        arguments passed to the actual decorated function.
+
+        .. code-block:: python
+
+            def extract_call_site_tag(span, *args, *kwargs)
+                if 'call_site_tag' in kwargs:
+                    span.set_tag('call_site_tag', kwargs['call_site_tag'])
+
+            @traced_function(on_start=extract_call_site_tag)
+            @tornado.get.coroutine
+            def my_function(arg1, arg2=None, call_site_tag=None)
+                ...
+
     :return: returns a tracing decorator
     """
 
-    @wrapt.decorator
-    def wrapper(wrapped, _, args, kwargs):
+    if func is None:
+        return functools.partial(traced_function, name=name,
+                                 on_start=on_start)
+
+    if name:
+        operation_name = name
+    else:
+        operation_name = func.__name__
+
+    @functools.wraps(func)
+    def decorator(*args, **kwargs):
         parent_span = get_current_span()
         if parent_span is None:
-            return wrapped(*args, **kwargs)
-        with parent_span.start_child(operation_name=operation_name,
-                                     tags=tags) as span:
-            mgr = lambda: RequestContextManager(span)
-            with tornado.stack_context.StackContext(mgr):
-                return wrapped(*args, **kwargs)
-    return wrapper
+            return func(*args, **kwargs)
 
-
-def traced_coroutine(operation_name, **tags):
-    """
-    A decorator that enables tracing of the wrapped Tornado coroutine
-    provided there is a parent span already established.
-
-    :param operation_name: used as the name of the child span
-    :param tags: optional tags that can be passed to the new child span
-    :return: returns a tracing decorator
-    """
-
-    @wrapt.decorator
-    def wrapper(wrapped, _, args, kwargs):
-        parent_span = get_current_span()
-        if parent_span is None:
-            return wrapped(*args, **kwargs)
-
-        span = parent_span.start_child(operation_name=operation_name,
-                                       tags=tags)
+        span = parent_span.start_child(operation_name=operation_name)
+        if callable(on_start):
+            on_start(span, *args, **kwargs)
         mgr = lambda: RequestContextManager(span)
         with tornado.stack_context.StackContext(mgr):
             try:
-                # cannot use yield inside StackContext, so instead
-                # use a hook on Future completion
-                res = wrapped(*args, **kwargs)
-
-                def done_callback(future):
-                    if future.exception() is not None:
-                        span.error('exception', future.exception())
+                res = func(*args, **kwargs)
+                # Tornado co-routines usually return futures, so we must wait
+                # until the future is completed, in order to accurately
+                # capture the function execution time.
+                if tornado.concurrent.is_future(res):
+                    def done_callback(future):
+                        exception = future.exception()
+                        if exception is not None:
+                            span.error('exception', exception)
+                        span.finish()
+                    res.add_done_callback(done_callback)
+                else:
                     span.finish()
-
-                res.add_done_callback(done_callback)
                 return res
             except Exception as e:
                 span.error('exception', e)
                 span.finish()
                 raise
-    return wrapper
+    return decorator

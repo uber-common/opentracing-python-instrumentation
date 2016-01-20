@@ -20,3 +20,4 @@
 from __future__ import absolute_import
 from .request_context import get_current_span  # noqa
 from .request_context import RequestContextManager  # noqa
+from .local_span import traced_function  # noqa

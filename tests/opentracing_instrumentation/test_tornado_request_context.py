@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-import functools
 
 import tornado.stack_context
 from tornado import gen
