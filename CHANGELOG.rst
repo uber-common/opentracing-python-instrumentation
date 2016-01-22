@@ -3,10 +3,10 @@
 History
 -------
 
-0.3.7 (unreleased)
+0.3.7 (2016-01-22)
 ------------------
 
-- Nothing changed yet.
+- Expose `client_hooks.install_all_patches` convenience method
 
 
 0.3.6 (2016-01-20)

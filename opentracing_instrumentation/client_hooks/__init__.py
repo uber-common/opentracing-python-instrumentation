@@ -17,3 +17,23 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import absolute_import
+
+
+def install_all_patches():
+    """
+    A convenience method that installs all available hooks.
+
+    If a specific module is not available on the path, it is ignored.
+    """
+    from . import mysqldb
+    from . import sqlalchemy
+    from . import tornado_http
+    from . import urllib
+    from . import urllib2
+
+    mysqldb.install_patches()
+    sqlalchemy.install_patches()
+    tornado_http.install_patches()
+    urllib.install_patches()
+    urllib2.install_patches()
