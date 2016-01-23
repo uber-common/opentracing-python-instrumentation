@@ -3,10 +3,10 @@
 History
 -------
 
-0.3.8 (unreleased)
+0.3.8 (2016-01-22)
 ------------------
 
-- Nothing changed yet.
+- Check if MySQLdb can be imported before trying to instrument it.
 
 
 0.3.7 (2016-01-22)

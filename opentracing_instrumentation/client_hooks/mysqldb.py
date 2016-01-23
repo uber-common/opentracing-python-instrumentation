@@ -32,6 +32,11 @@ else:
 
 @singleton
 def install_patches():
+    try:
+        import MySQLdb
+    except ImportError:  # pragma: no cover
+        return
+
     factory = ConnectionFactory(connect_func=MySQLdb.connect,
                                 module_name='MySQLdb',
                                 conn_wrapper_ctor=ConnectionWrapper)
