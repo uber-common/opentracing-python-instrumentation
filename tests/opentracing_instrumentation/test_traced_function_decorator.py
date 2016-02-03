@@ -162,15 +162,32 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 assert param1 == 123
                 return 'oh yeah'  # not a co-routine
 
+        class SomeClient2(object):
+            @traced_function(require_active_trace=True)
+            def func5(self, param1):
+                assert param1 == 123
+                return 'oh yeah'  # not a co-routine
+
         s = SomeClient()
+        s2 = SomeClient2()
 
         @gen.coroutine
         def run():
-            # verify call_size_tag argument is extracted and added as tag
+            # verify a new trace is started
             with mock.patch('opentracing.Span.start_child') as start_child:
-                r = s.func4(123)
-                assert r == 'oh yeah'
-                assert start_child.call_count == 0
+                with mock.patch('opentracing.Tracer.start_trace') as new_trace:
+                    r = s.func4(123)
+                    assert r == 'oh yeah'
+                    assert new_trace.call_count == 1
+                    assert start_child.call_count == 0
+
+            # verify no new trace or child span is started
+            with mock.patch('opentracing.Span.start_child') as start_child:
+                with mock.patch('opentracing.Tracer.start_trace') as new_trace:
+                    r = s2.func5(123)
+                    assert r == 'oh yeah'
+                    assert new_trace.call_count == 0
+                    assert start_child.call_count == 0
 
             raise tornado.gen.Return(1)
 

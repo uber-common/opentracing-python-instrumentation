@@ -53,7 +53,7 @@ def install_patches():
                 with span:
                     resp = urllib2.AbstractHTTPHandler.do_open(self, conn, req)
                     if resp.code is not None:
-                        span.set_tag('status_code', resp.code)
+                        span.set_tag('http.status_code', resp.code)
                 return resp
 
         return DerivedHandler

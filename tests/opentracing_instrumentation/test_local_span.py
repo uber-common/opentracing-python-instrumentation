@@ -26,7 +26,9 @@ from opentracing import Tracer
 
 
 def test_func_span_without_parent():
-    with func_span('test') as span:
+    with func_span('test', require_active_trace=False) as span:
+        assert span is not None
+    with func_span('test', require_active_trace=True) as span:
         assert span is None
 
 

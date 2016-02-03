@@ -20,7 +20,8 @@
 from __future__ import absolute_import
 import contextlib2
 import wrapt
-from opentracing_instrumentation import get_current_span
+from opentracing.ext import tags as ext_tags
+from .. import get_current_span
 from ..local_span import func_span
 
 # Utils for instrumenting DB API v2 compatible drivers.
@@ -60,7 +61,7 @@ def db_span(sql_statement,
         else:
             operation = statement[0:space_idx]
 
-    tags = dict()
+    tags = {ext_tags.SPAN_KIND: ext_tags.SPAN_KIND_RPC_CLIENT}
     if add_sql_tag:
         tags['sql'] = statement
     if sql_parameters:
