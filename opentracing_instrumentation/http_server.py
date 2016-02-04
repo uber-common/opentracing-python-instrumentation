@@ -40,7 +40,8 @@ def before_request(request, tracer=None):
         span = tracer.join_trace(operation_name=operation,
                                  parent_trace_context=context)
 
-    span.set_tag('client.http.url', request.full_url)
+    span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
+    span.set_tag('http.url', request.full_url)
 
     remote_ip = request.remote_ip
     if remote_ip:
@@ -162,7 +163,8 @@ class WSGIRequestWrapper(AbstractRequestWrapper):
     @property
     def full_url(self):
         """
-        Taken from http://legacy.python.org/dev/peps/pep-3333/#url-reconstruction
+        Taken from
+        http://legacy.python.org/dev/peps/pep-3333/#url-reconstruction
 
         :return: Reconstructed URL from WSGI environment.
         """

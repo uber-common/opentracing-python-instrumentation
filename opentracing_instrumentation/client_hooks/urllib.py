@@ -23,7 +23,7 @@ from __future__ import absolute_import
 import logging
 
 import opentracing
-from opentracing.ext import tags
+from opentracing.ext import tags as ext_tags
 from opentracing_instrumentation import get_current_span
 from ._singleton import singleton
 
@@ -44,26 +44,27 @@ def install_patches():
             host = parsed_url.hostname or None
             port = parsed_url.port or None
 
-            if get_current_span() is None:
-                span = opentracing.tracer.begin_trace(
-                    operation_name='urllib'
-                )  # TODO pass client=True
+            parent_span = get_current_span()
+            if parent_span is None:
+                span = opentracing.tracer.begin_trace(operation_name='urllib')
             else:
-                span = get_current_span().start_child(operation_name='http')
+                span = parent_span.start_child(operation_name='urllib')
+
+            span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
 
             # use span as context manager so that its finish() method is called
             with span:
                 span.set_tag('http.url', fullurl)
                 if host:
-                    span.set_tag(tags.PEER_HOST_IPV4, host)
+                    span.set_tag(ext_tags.PEER_HOST_IPV4, host)
                 if port:
-                    span.set_tag(tags.PEER_PORT, port)
+                    span.set_tag(ext_tags.PEER_PORT, port)
                 # TODO add callee service name
                 # TODO add headers to propagate trace
                 # cannot use super here, this is an old style class
                 fileobj = urllib.FancyURLopener.open(self, fullurl, data)
                 if fileobj.getcode() is not None:
-                    span.set_tag('status_code', fileobj.getcode())
+                    span.set_tag('http.status_code', fileobj.getcode())
 
             return fileobj
 

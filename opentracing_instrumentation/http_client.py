@@ -41,12 +41,13 @@ def before_http_request(request, current_span_extractor):
     op = request.operation
     parent_span = current_span_extractor()
     if parent_span is None:
-        span = opentracing.tracer.start_trace(
-            operation_name=op)  # TODO pass client=True
+        span = opentracing.tracer.start_trace(operation_name=op)
     else:
         span = parent_span.start_child(operation_name=op)
 
-    span.set_tag('server.http.url', request.full_url)
+    span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
+    span.set_tag('http.url', request.full_url)
+
     service_name = request.service_name
     host, port = request.host_port
     if service_name:

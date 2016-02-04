@@ -23,6 +23,7 @@ from __future__ import absolute_import
 import logging
 
 import opentracing
+from opentracing.ext import tags as ext_tags
 from ..request_context import get_current_span
 from ._singleton import singleton
 
@@ -52,9 +53,10 @@ def install_patches():
                                    statement.split(' ', 1)[0].upper())
         if get_current_span() is None:
             span = opentracing.tracer.start_trace(
-                operation_name=operation)  # TODO pass client=True
+                operation_name=operation)
         else:
             span = get_current_span().start_child(operation_name=operation)
+        span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         if statement:
             span.set_tag('sql', statement)
         context.opentracing_span = span

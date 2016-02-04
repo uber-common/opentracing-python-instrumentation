@@ -20,12 +20,13 @@
 from __future__ import absolute_import
 import functools
 import contextlib2
+import opentracing
 import tornado.stack_context
 import tornado.concurrent
 from . import get_current_span, RequestContextManager
 
 
-def func_span(func, tags=None):
+def func_span(func, tags=None, require_active_trace=False):
     """
     Creates a new local span for execution of the given `func`.
     The returned span is best used as a context manager, e.g.
@@ -40,23 +41,34 @@ def func_span(func, tags=None):
 
     :param func: name of the function or method
     :param tags: optional tags to add to the child span
+    :param require_active_trace: controls what to do when there is no active
+        trace. If require_active_trace=True, then no span is created.
+        If require_active_trace=False, a new trace is started.
     :return: new child span, or a dummy context manager if there is no
         active/current parent span
     """
-    span = get_current_span()
+    current_span = get_current_span()
 
-    @contextlib2.contextmanager
-    def empty_ctx_mgr():
-        yield None
+    if current_span is None and require_active_trace:
+        @contextlib2.contextmanager
+        def empty_ctx_mgr():
+            yield None
 
-    if span is None:
         return empty_ctx_mgr()
 
     # TODO convert func to a proper name: module:class.func
-    return span.start_child(operation_name=str(func), tags=tags)
+    operation_name = str(func)
+
+    if current_span is None:
+        return opentracing.tracer.start_trace(
+            operation_name=operation_name, tags=tags)
+    else:
+        return current_span.start_child(
+            operation_name=operation_name, tags=tags)
 
 
-def traced_function(func=None, name=None, on_start=None):
+def traced_function(func=None, name=None, on_start=None,
+                    require_active_trace=False):
     """
     A decorator that enables tracing of the wrapped function or
     Tornado co-routine provided there is a parent span already established.
@@ -88,12 +100,16 @@ def traced_function(func=None, name=None, on_start=None):
             def my_function(arg1, arg2=None, call_site_tag=None)
                 ...
 
+    :param require_active_trace: controls what to do when there is no active
+        trace. If require_active_trace=True, then no span is created.
+        If require_active_trace=False, a new trace is started.
     :return: returns a tracing decorator
     """
 
     if func is None:
         return functools.partial(traced_function, name=name,
-                                 on_start=on_start)
+                                 on_start=on_start,
+                                 require_active_trace=require_active_trace)
 
     if name:
         operation_name = name
@@ -103,10 +119,15 @@ def traced_function(func=None, name=None, on_start=None):
     @functools.wraps(func)
     def decorator(*args, **kwargs):
         parent_span = get_current_span()
-        if parent_span is None:
+        if parent_span is None and require_active_trace:
             return func(*args, **kwargs)
 
-        span = parent_span.start_child(operation_name=operation_name)
+        if parent_span is None:
+            span = opentracing.tracer.start_trace(
+                operation_name=operation_name)
+        else:
+            span = parent_span.start_child(
+                operation_name=operation_name)
         if callable(on_start):
             on_start(span, *args, **kwargs)
         mgr = lambda: RequestContextManager(span)
@@ -115,7 +136,7 @@ def traced_function(func=None, name=None, on_start=None):
                 res = func(*args, **kwargs)
                 # Tornado co-routines usually return futures, so we must wait
                 # until the future is completed, in order to accurately
-                # capture the function execution time.
+                # capture the function's execution time.
                 if tornado.concurrent.is_future(res):
                     def done_callback(future):
                         exception = future.exception()

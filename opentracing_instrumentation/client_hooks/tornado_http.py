@@ -127,7 +127,7 @@ def traced_fetch_impl(real_fetch_impl):
 
         def new_callback(response):
             if hasattr(response, 'code') and response.code:
-                span.set_tag('status_code', '%s' % response.code)
+                span.set_tag('http.status_code', '%s' % response.code)
             if hasattr(response, 'error') and response.error:
                 span.error('error', '%s' % response.error)
             span.finish()
