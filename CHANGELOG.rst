@@ -3,10 +3,11 @@
 History
 -------
 
-0.3.9 (unreleased)
+0.3.9 (2016-02-04)
 ------------------
 
-- Nothing changed yet.
+- Set SPAN_KIND tag for all RPC spans. 
+- Allow traced_function to start a trace.
 
 
 0.3.8 (2016-01-22)
