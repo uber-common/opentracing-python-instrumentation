@@ -3,13 +3,7 @@
 History
 -------
 
-0.3.11 (unreleased)
--------------------
-
-- Nothing changed yet.
-
-
-0.3.10 (2016-02-06)
+0.3.11 (2016-02-06)
 -------------------
 
 - Add instrumentation for `requests` library
