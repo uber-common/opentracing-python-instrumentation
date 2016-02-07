@@ -31,9 +31,11 @@ def install_all_patches():
     from . import tornado_http
     from . import urllib
     from . import urllib2
+    from . import requests
 
     mysqldb.install_patches()
     sqlalchemy.install_patches()
     tornado_http.install_patches()
     urllib.install_patches()
     urllib2.install_patches()
+    requests.install_patches()
