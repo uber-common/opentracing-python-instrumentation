@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/opentracing_instrumentation.svg)](https://badge.fury.io/py/opentracing_instrumentation)
+
 # opentracing-python-instrumentation
 
 A collection of instrumentation tools to enable tracing with 
