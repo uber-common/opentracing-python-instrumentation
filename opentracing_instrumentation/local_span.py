@@ -21,9 +21,9 @@ from __future__ import absolute_import
 import functools
 import contextlib2
 import opentracing
-import tornado.stack_context
 import tornado.concurrent
 from . import get_current_span, RequestContextManager
+from .request_context import ThreadSafeStackContext
 
 
 def func_span(func, tags=None, require_active_trace=False):
@@ -131,7 +131,7 @@ def traced_function(func=None, name=None, on_start=None,
         if callable(on_start):
             on_start(span, *args, **kwargs)
         mgr = lambda: RequestContextManager(span)
-        with tornado.stack_context.StackContext(mgr):
+        with ThreadSafeStackContext(mgr):
             try:
                 res = func(*args, **kwargs)
                 # Tornado co-routines usually return futures, so we must wait
