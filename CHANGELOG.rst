@@ -3,10 +3,10 @@
 History
 -------
 
-0.3.12 (unreleased)
--------------------
+0.4.0 (2016-02-26)
+------------------
 
-- Nothing changed yet.
+- Replace Tornado's StackContext with ThreadSafeStackContext
 
 
 0.3.11 (2016-02-06)
