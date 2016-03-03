@@ -3,7 +3,7 @@
 History
 -------
 
-0.4.1 (unreleased)
+0.4.1 (2016-03-03)
 ------------------
 
 - Fix memory leak in SQL instrumentation
