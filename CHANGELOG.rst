@@ -6,7 +6,7 @@ History
 0.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix memory leak in SQL instrumentation
 
 
 0.4.0 (2016-02-26)

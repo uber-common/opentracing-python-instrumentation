@@ -115,28 +115,27 @@ class ConnectionFactory(object):
 class ConnectionWrapper(wrapt.ObjectProxy):
     def __init__(self, connection, module_name, connect_params):
         super(ConnectionWrapper, self).__init__(wrapped=connection)
-        self._connection = connection
         self._module_name = module_name
         self._connect_params = connect_params
 
     def cursor(self, *args, **kwargs):
         return CursorWrapper(
-            cursor=self._connection.cursor(*args, **kwargs),
+            cursor=self.__wrapped__.cursor(*args, **kwargs),
             module_name=self._module_name,
             connect_params=self._connect_params,
             cursor_params=(args, kwargs) if args or kwargs else None)
 
     def begin(self):
         with db_span(sql_statement=_BEGIN, module_name=self._module_name):
-            return self._connection.begin()
+            return self.__wrapped__.begin()
 
     def commit(self):
         with db_span(sql_statement=_COMMIT, module_name=self._module_name):
-            return self._connection.commit()
+            return self.__wrapped__.commit()
 
     def rollback(self):
         with db_span(sql_statement=_ROLLBACK, module_name=self._module_name):
-            return self._connection.rollback()
+            return self.__wrapped__.rollback()
 
 
 class ContextManagerConnectionWrapper(ConnectionWrapper):
@@ -160,7 +159,7 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
 
     def __enter__(self):
         with func_span('%s:begin_transaction' % self._module_name):
-            cursor = self._connection.__enter__()
+            cursor = self.__wrapped__.__enter__()
 
         return CursorWrapper(cursor=cursor,
                              module_name=self._module_name,
@@ -169,14 +168,13 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
     def __exit__(self, exc, value, tb):
         outcome = _COMMIT if exc is None else _ROLLBACK
         with db_span(sql_statement=outcome, module_name=self._module_name):
-            return self._connection.__exit__(exc, value, tb)
+            return self.__wrapped__.__exit__(exc, value, tb)
 
 
 class CursorWrapper(wrapt.ObjectProxy):
     def __init__(self, cursor, module_name,
                  connect_params=None, cursor_params=None):
         super(CursorWrapper, self).__init__(wrapped=cursor)
-        self._cursor = cursor
         self._module_name = module_name
         self._connect_params = connect_params
         self._cursor_params = cursor_params
@@ -190,16 +188,16 @@ class CursorWrapper(wrapt.ObjectProxy):
                      connect_params=self._connect_params,
                      cursor_params=self._cursor_params):
             if params is NO_ARG:
-                return self._cursor.execute(sql)
+                return self.__wrapped__.execute(sql)
             else:
-                return self._cursor.execute(sql, params)
+                return self.__wrapped__.execute(sql, params)
 
     def executemany(self, sql, seq_of_parameters):
         with db_span(sql_statement=sql, sql_parameters=seq_of_parameters,
                      module_name=self._module_name,
                      connect_params=self._connect_params,
                      cursor_params=self._cursor_params):
-            return self._cursor.executemany(sql, seq_of_parameters)
+            return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def callproc(self, proc_name, params=NO_ARG):
         with db_span(sql_statement='sproc:%s' % proc_name,
@@ -208,6 +206,6 @@ class CursorWrapper(wrapt.ObjectProxy):
                      connect_params=self._connect_params,
                      cursor_params=self._cursor_params):
             if params is NO_ARG:
-                return self._cursor.callproc(proc_name)
+                return self.__wrapped__.callproc(proc_name)
             else:
-                return self._cursor.callproc(proc_name, params)
+                return self.__wrapped__.callproc(proc_name, params)
