@@ -131,7 +131,11 @@ def traced_function(func=None, name=None, on_start=None,
         if callable(on_start):
             on_start(span, *args, **kwargs)
         mgr = lambda: RequestContextManager(span)
-        with ThreadSafeStackContext(mgr):
+        # We explicitly invoke deactivation callback for the StackContext,
+        # because there are scenarios when it gets retained forever, for
+        # example when a Periodic Callback is scheduled lazily while in the
+        # scope of a tracing StackContext.
+        with ThreadSafeStackContext(mgr) as deactivate_cb:
             try:
                 res = func(*args, **kwargs)
                 # Tornado co-routines usually return futures, so we must wait
@@ -139,15 +143,18 @@ def traced_function(func=None, name=None, on_start=None,
                 # capture the function's execution time.
                 if tornado.concurrent.is_future(res):
                     def done_callback(future):
+                        deactivate_cb()
                         exception = future.exception()
                         if exception is not None:
                             span.error('exception', exception)
                         span.finish()
                     res.add_done_callback(done_callback)
                 else:
+                    deactivate_cb()
                     span.finish()
                 return res
             except Exception as e:
+                deactivate_cb()
                 span.error('exception', e)
                 span.finish()
                 raise
