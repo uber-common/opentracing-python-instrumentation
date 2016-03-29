@@ -3,10 +3,10 @@
 History
 -------
 
-0.4.2 (unreleased)
+0.4.2 (2016-03-28)
 ------------------
 
-- Nothing changed yet.
+- Work around uWSGI collecting wsgi_environ.iteritems() during iteration
 
 
 0.4.1 (2016-03-03)
