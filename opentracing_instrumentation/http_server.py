@@ -154,9 +154,11 @@ class WSGIRequestWrapper(AbstractRequestWrapper):
         """
         prefix = 'HTTP_'
         p_len = len(prefix)
+        # use .items() despite suspected memory pressure bc GC occasionally
+        # collects wsgi_environ.iteritems() during iteration.
         headers = {
             key[p_len:].replace('_', '-').lower():
-                val for (key, val) in wsgi_environ.iteritems()
+                val for (key, val) in wsgi_environ.items()
             if key.startswith(prefix)}
         return headers
 
