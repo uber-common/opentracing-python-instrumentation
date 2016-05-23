@@ -1,4 +1,4 @@
-[![PyPI version](https://badge.fury.io/py/opentracing_instrumentation.svg)](https://badge.fury.io/py/opentracing_instrumentation)
+[![PyPI version](https://img.shields.io/pypi/v/opentracing_instrumentation.svg)](https://pypi.python.org/pypi/opentracing_instrumentation)
 
 # opentracing-python-instrumentation
 
@@ -30,8 +30,7 @@ Here's an example of a middleware for
 from opentracing_instrumentation.request_context import RequestContextManager
 from opentracing_instrumentation.http_server import before_request
 from opentracing_instrumentation.http_server import WSGIRequestWrapper
-import opentracing_instrumentation.client_hooks.sqlalchemy
-import opentracing_instrumentation.client_hooks.urllib2
+from opentracing_instrumentation.client_hooks import install_all_patches
 
 
 class TracerMiddleware(object):
@@ -44,16 +43,12 @@ class TracerMiddleware(object):
         CONFIG.caller_name_headers.append('X-Uber-Source')
         CONFIG.callee_endpoint_headers.append('X-Uber-Endpoint')
 
-        self.install_client_hooks()
+        install_all_patches()
         self.wsgi_app = create_wsgi_middleware(wsgi_app)
         self.init_tracer()
 
     def __call__(self, environ, start_response):
         return self.wsgi_app(environ, start_response)
-
-    def install_client_hooks(self):
-        opentracing_instrumentation.client_hooks.sqlalchemy.install_patches()
-        opentracing_instrumentation.client_hooks.urllib2.install_patches()
 
     def init_tracer(self):
         # code specific to your tracer implementation
