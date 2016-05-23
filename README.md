@@ -1,4 +1,4 @@
-[![PyPI version](https://img.shields.io/pypi/v/opentracing_instrumentation.svg)](https://pypi.python.org/pypi/opentracing_instrumentation)
+[![PyPI version][pypi-img]][pypi] [![Build Status][ci-img]][ci]
 
 # opentracing-python-instrumentation
 
@@ -146,3 +146,7 @@ postrelease
 git push
 ```
 
+[ci-img]: https://travis-ci.org/uber-common/opentracing-python-instrumentation.svg?branch=master
+[ci]: https://travis-ci.org/uber-common/opentracing-python-instrumentation
+[pypi-img]: https://img.shields.io/pypi/v/opentracing_instrumentation.svg
+[pypi]: https://pypi.python.org/pypi/opentracing_instrumentation
