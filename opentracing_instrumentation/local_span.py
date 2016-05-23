@@ -59,12 +59,8 @@ def func_span(func, tags=None, require_active_trace=False):
     # TODO convert func to a proper name: module:class.func
     operation_name = str(func)
 
-    if current_span is None:
-        return opentracing.tracer.start_trace(
-            operation_name=operation_name, tags=tags)
-    else:
-        return current_span.start_child(
-            operation_name=operation_name, tags=tags)
+    return opentracing.tracer.start_span(
+        operation_name=operation_name, parent=current_span, tags=tags)
 
 
 def traced_function(func=None, name=None, on_start=None,
@@ -122,15 +118,14 @@ def traced_function(func=None, name=None, on_start=None,
         if parent_span is None and require_active_trace:
             return func(*args, **kwargs)
 
-        if parent_span is None:
-            span = opentracing.tracer.start_trace(
-                operation_name=operation_name)
-        else:
-            span = parent_span.start_child(
-                operation_name=operation_name)
+        span = opentracing.tracer.start_span(
+                operation_name=operation_name, parent=parent_span)
         if callable(on_start):
             on_start(span, *args, **kwargs)
-        mgr = lambda: RequestContextManager(span)
+
+        def mgr():
+            return RequestContextManager(span)
+
         # We explicitly invoke deactivation callback for the StackContext,
         # because there are scenarios when it gets retained forever, for
         # example when a Periodic Callback is scheduled lazily while in the
@@ -146,7 +141,8 @@ def traced_function(func=None, name=None, on_start=None,
                         deactivate_cb()
                         exception = future.exception()
                         if exception is not None:
-                            span.error('exception', exception)
+                            span.log(event='exception', payload=exception)
+                            span.set_tag('error', 'true')
                         span.finish()
                     res.add_done_callback(done_callback)
                 else:
@@ -155,7 +151,8 @@ def traced_function(func=None, name=None, on_start=None,
                 return res
             except Exception as e:
                 deactivate_cb()
-                span.error('exception', e)
+                span.log(event='exception', payload=e)
+                span.set_tag('error', 'true')
                 span.finish()
                 raise
     return decorator

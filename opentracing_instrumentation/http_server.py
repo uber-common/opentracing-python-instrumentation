@@ -20,28 +20,43 @@
 
 from __future__ import absolute_import
 
+import logging
+
 import opentracing
-from opentracing_instrumentation import config
+from opentracing import Format
 from opentracing.ext import tags
+from opentracing_instrumentation import config
 
 
 def before_request(request, tracer=None):
+    """
+    Attempts to extract a tracing span from incoming request.
+    If no tracing context is passed in the headers, or the data
+    cannot be parsed, a new root span is started.
+
+    :param request: HTTP request with `.headers` property exposed
+        that satisfies a regular dictionary interface
+    :param tracer: optional tracer instance to use. If not specified
+        the global opentracing.tracer will be used.
+    :return: returns a new, already started span.
+    """
     if tracer is None:  # pragma: no cover
         tracer = opentracing.tracer
 
     operation = request.operation
-    context = tracer.trace_context_from_text(
-        trace_context_id=request.headers,
-        trace_attributes=request.headers
-    )
-    if context is None:
-        span = tracer.start_trace(operation_name=operation)
-    else:
-        span = tracer.join_trace(operation_name=operation,
-                                 parent_trace_context=context)
+    try:
+        span = tracer.join(operation_name=operation,
+                           format=Format.TEXT_MAP,
+                           carrier=request.headers)
+    except Exception as e:
+        logging.exception('join failed: %s' % e)
+        span = None
+
+    if span is None:
+        span = tracer.start_span(operation_name=operation)
 
     span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
-    span.set_tag('http.url', request.full_url)
+    span.set_tag(tags.HTTP_URL, request.full_url)
 
     remote_ip = request.remote_ip
     if remote_ip:

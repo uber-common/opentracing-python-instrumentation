@@ -54,7 +54,7 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 return 'oh yeah'  # not a co-routine
 
         s = SomeClient()
-        parent = opentracing.tracer.start_trace('hello')
+        parent = opentracing.tracer.start_span('hello')
 
         @gen.coroutine
         def run():
@@ -62,8 +62,8 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
             for func in ['func1', 'func1_1']:
                 child = mock.MagicMock()
                 # verify start_child is called with actual function name
-                with patch_object(parent, 'start_child') as start_child:
-                    start_child.return_value = child
+                with patch_object(opentracing.tracer, 'start_span',
+                                  return_value=child) as start_child:
                     child.set_tag = mock.MagicMock()
                     child.error = mock.MagicMock()
                     child.finish = mock.MagicMock()
@@ -71,7 +71,8 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                         r = yield s.func1(123)
                     else:
                         r = s.func1_1(123)
-                    start_child.assert_called_once_with(operation_name=func)
+                    start_child.assert_called_once_with(
+                        operation_name=func, parent=parent)
                     assert child.set_tag.call_count == 0
                     assert child.error.call_count == 0
                     assert child.finish.call_count == 1
@@ -79,7 +80,8 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
 
                 # verify span.error() is called on exception
                 child = mock.MagicMock()
-                with patch_object(parent, 'start_child') as start_child:
+                with patch_object(opentracing.tracer, 'start_span') \
+                        as start_child:
                     start_child.return_value = child
                     child.error = mock.MagicMock()
                     child.finish = mock.MagicMock()
@@ -88,7 +90,7 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                             yield s.func1(999)
                         else:
                             s.func1_1(999)
-                    assert child.error.call_count == 1
+                    assert child.log.call_count == 1
                     assert child.finish.call_count == 1
 
             raise tornado.gen.Return(1)
@@ -105,19 +107,20 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 raise tornado.gen.Return('oh yeah')
 
         s = SomeClient()
-        parent = opentracing.tracer.start_trace('hello')
+        parent = opentracing.tracer.start_span('hello')
 
         @gen.coroutine
         def run():
-            # verify start_child is called with overridden function name
+            # verify start_span is called with overridden function name
             child = mock.MagicMock()
-            with patch_object(parent, 'start_child') as start_child:
-                start_child.return_value = child
+            with patch_object(opentracing.tracer, 'start_span',
+                              return_value=child) as start_child:
                 child.set_tag = mock.MagicMock()
                 r = yield s.func2(123)
                 assert r == 'oh yeah'
                 start_child.assert_called_once_with(
-                    operation_name='func2_modified')  # overridden name
+                    operation_name='func2_modified',  # overridden name
+                    parent=parent)
                 assert child.set_tag.call_count == 0
 
             raise tornado.gen.Return(1)
@@ -134,21 +137,22 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 return 'oh yeah'  # not a co-routine
 
         s = SomeClient()
-        parent = opentracing.tracer.start_trace('hello')
+        parent = opentracing.tracer.start_span('hello')
 
         @gen.coroutine
         def run():
             # verify call_size_tag argument is extracted and added as tag
             child = mock.MagicMock()
-            with patch_object(parent, 'start_child') as start_child:
+            with patch_object(opentracing.tracer, 'start_span') \
+                    as start_child:
                 start_child.return_value = child
                 child.set_tag = mock.MagicMock()
                 r = s.func3('somewhere', call_site_tag='somewhere')
                 assert r == 'oh yeah'
-                start_child.assert_called_once_with(operation_name='func3')
+                start_child.assert_called_once_with(
+                    operation_name='func3', parent=parent)
                 child.set_tag.assert_called_once_with(
-                    'call_site_tag', 'somewhere'
-                )
+                    'call_site_tag', 'somewhere')
 
             raise tornado.gen.Return(1)
 
@@ -174,20 +178,17 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
         @gen.coroutine
         def run():
             # verify a new trace is started
-            with mock.patch('opentracing.Span.start_child') as start_child:
-                with mock.patch('opentracing.Tracer.start_trace') as new_trace:
-                    r = s.func4(123)
-                    assert r == 'oh yeah'
-                    assert new_trace.call_count == 1
-                    assert start_child.call_count == 0
+            with patch_object(opentracing.tracer, 'start_span') as start:
+                r = s.func4(123)
+                assert r == 'oh yeah'
+                start.assert_called_once_with(
+                    operation_name='func4', parent=None)
 
             # verify no new trace or child span is started
-            with mock.patch('opentracing.Span.start_child') as start_child:
-                with mock.patch('opentracing.Tracer.start_trace') as new_trace:
-                    r = s2.func5(123)
-                    assert r == 'oh yeah'
-                    assert new_trace.call_count == 0
-                    assert start_child.call_count == 0
+            with patch_object(opentracing.tracer, 'start_span') as start:
+                r = s2.func5(123)
+                assert r == 'oh yeah'
+                assert start.call_count == 0
 
             raise tornado.gen.Return(1)
 

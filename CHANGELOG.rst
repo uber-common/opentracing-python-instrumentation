@@ -3,10 +3,10 @@
 History
 -------
 
-0.4.3 (unreleased)
+1.0.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Upgrade to OpenTracing API 1.0rc4
 
 
 0.4.2 (2016-03-28)

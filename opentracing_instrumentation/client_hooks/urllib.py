@@ -44,17 +44,14 @@ def install_patches():
             host = parsed_url.hostname or None
             port = parsed_url.port or None
 
-            parent_span = get_current_span()
-            if parent_span is None:
-                span = opentracing.tracer.begin_trace(operation_name='urllib')
-            else:
-                span = parent_span.start_child(operation_name='urllib')
+            span = opentracing.tracer.start_span(
+                operation_name='urllib', parent=get_current_span())
 
             span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
 
             # use span as context manager so that its finish() method is called
             with span:
-                span.set_tag('http.url', fullurl)
+                span.set_tag(ext_tags.HTTP_URL, fullurl)
                 if host:
                     span.set_tag(ext_tags.PEER_HOST_IPV4, host)
                 if port:

@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 import contextlib2
 import wrapt
+import opentracing
 from opentracing.ext import tags as ext_tags
 from .. import get_current_span
 from ..local_span import func_span
@@ -71,9 +72,9 @@ def db_span(sql_statement,
     if cursor_params:
         tags['sql.cursor'] = cursor_params
 
-    return span.start_child(
+    return opentracing.tracer.start_span(
         operation_name='%s:%s' % (module_name, operation),
-        tags=tags
+        parent=span, tags=tags
     )
 
 

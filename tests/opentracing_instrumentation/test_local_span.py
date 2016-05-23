@@ -18,6 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from __future__ import absolute_import
+
+import opentracing
 from opentracing_instrumentation.local_span import func_span
 from opentracing_instrumentation.client_hooks._dbapi2 import db_span, _COMMIT
 from opentracing_instrumentation.client_hooks._singleton import singleton
@@ -33,8 +35,8 @@ def test_func_span_without_parent():
 
 
 def test_func_span():
-    tracer = Tracer()
-    span = tracer.start_trace(operation_name='parent')
+    tracer = opentracing.tracer
+    span = tracer.start_span(operation_name='parent')
     with RequestContextManager(span=span):
         with func_span('test') as child_span:
             assert span is child_span
@@ -48,8 +50,8 @@ def test_db_span_without_parent():
 
 
 def test_db_span():
-    tracer = Tracer()
-    span = tracer.start_trace(operation_name='parent')
+    tracer = opentracing.tracer
+    span = tracer.start_span(operation_name='parent')
     with RequestContextManager(span=span):
         with db_span(_COMMIT, 'MySQLdb') as child_span:
             assert span is child_span

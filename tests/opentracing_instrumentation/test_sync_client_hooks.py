@@ -66,52 +66,60 @@ def test_https_child():
 
 def do_test(scheme='http', root_span=True):
     with install_hooks():
-        request = urllib2.Request('%s://localhost:9777/proxy' % scheme,
-                                  headers={'Remote-LOC': 'New New York',
-                                           'Remote-Op': 'antiquing'})
+        _do_test(scheme=scheme, root_span=root_span)
 
-        class Response(object):
-            def __init__(self):
-                self.code = 200
-                self.msg = ''
 
-            def info(self):
-                return None
+def _do_test(scheme='http', root_span=True):
+    request = urllib2.Request('%s://localhost:9777/proxy' % scheme,
+                              headers={'Remote-LOC': 'New New York',
+                                       'Remote-Op': 'antiquing'})
 
-        span = mock.MagicMock()
-        span.set_tag = mock.MagicMock()
-        span.finish = mock.MagicMock()
+    class Response(object):
+        def __init__(self):
+            self.code = 200
+            self.msg = ''
 
-        headers = {'TRACE-ID': '123'}
+        def info(self):
+            return None
 
-        with mock.patch('urllib2.AbstractHTTPHandler.do_open',
-                        return_value=Response()), \
-                mock.patch.object(opentracing.tracer,
-                                  'trace_context_to_text',
-                                  return_value=(headers, None)):
+    span = mock.MagicMock()
+    span.set_tag = mock.MagicMock()
+    span.finish = mock.MagicMock()
 
-            if root_span:
-                with mock.patch.object(opentracing.tracer,
-                                       'start_trace',
-                                       return_value=span) as ctx:
+    headers = {'TRACE-ID': '123'}
+
+    def inject(span, format, carrier):
+        carrier['TRACE-ID'] = '123'
+
+    with mock.patch('urllib2.AbstractHTTPHandler.do_open',
+                    return_value=Response()), \
+            mock.patch.object(opentracing.tracer, 'inject',
+                              side_effect=inject):
+
+        if root_span:
+            with mock.patch.object(opentracing.tracer,
+                                   'start_span',
+                                   return_value=span) as ctx:
+                resp = urllib2.urlopen(request)
+                ctx.assert_called_once_with(
+                    operation_name='GET:antiquing', parent=None)
+                # TODO check client=True
+        else:
+            current_span = mock.MagicMock()
+            with mock.patch.object(opentracing.tracer,
+                                   'start_span',
+                                   return_value=span) as start_child:
+                with RequestContextManager(current_span):
                     resp = urllib2.urlopen(request)
-                    ctx.assert_called_once_with(
-                        operation_name='GET:antiquing')
-                    # TODO check client=True
-            else:
-                current_span = mock.MagicMock()
-                with mock.patch.object(current_span,
-                                       'start_child',
-                                       return_value=span) as start_child:
-                    with RequestContextManager(current_span):
-                        resp = urllib2.urlopen(request)
-                        start_child.assert_called_once_with(
-                            operation_name='GET:antiquing')
+                    start_child.assert_called_once_with(
+                        operation_name='GET:antiquing',
+                        parent=current_span)
 
-        assert resp is not None
-        assert span.set_tag.call_count >= 2
-        assert span.__enter__.call_count == 1
-        assert span.__exit__.call_count == 1, 'ensure finish() was called'
+    assert resp is not None
+    assert span.set_tag.call_count >= 2
+    assert span.__enter__.call_count == 1
+    assert span.__exit__.call_count == 1, 'ensure finish() was called'
 
-        norm_headers = HTTPHeaders(request.headers)
-        assert norm_headers.get('trace-id') == '123'
+    # verify trace-id was correctly injected into headers
+    norm_headers = HTTPHeaders(request.headers)
+    assert norm_headers.get('trace-id') == '123'
