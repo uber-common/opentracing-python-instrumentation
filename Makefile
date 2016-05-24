@@ -23,12 +23,18 @@ help:
 	@echo "dist - package"
 	@echo "install - install the package to the active Python's site-packages"
 
-bootstrap:
+check-virtualenv:
 	@[ -d env ] || echo "Please run 'virtualenv env' first"
 	@[ -d env ] || exit 1
+
+bootstrap: check-virtualenv install-deps
+
+install-deps:
 	pip install -r requirements.txt
 	pip install -r requirements-test.txt
 	python setup.py develop
+
+install-ci: install-deps
 
 clean: clean-build clean-pyc clean-test
 
@@ -50,16 +56,10 @@ clean-test:
 	rm -fr htmlcov/
 
 lint:
-	flake8 $(project) tests
+	flake8 $(project)
 
 test:
 	$(pytest) $(test_args)
-
-jenkins:
-	pip install -r requirements.txt
-	pip install -r requirements-test.txt
-	python setup.py develop
-	CLAY_CONFIG=config/test.yaml $(pytest) $(test_args) --junit-xml=jenkins.xml
 
 coverage:
 	coverage run --source $(project) setup.py test
@@ -80,8 +80,5 @@ dist: clean
 	python setup.py bdist_wheel
 	ls -l dist
 
-install:
-	pip install -r requirements.txt
-	pip install -r requirements-test.txt
-	echo skipping pip install -r requirements-doc.txt
+install: install-deps
 	python setup.py install

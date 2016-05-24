@@ -24,6 +24,7 @@ import mock
 from opentracing_instrumentation.http_server import TornadoRequestWrapper
 import tornado.httputil
 import opentracing
+from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation import http_server
 from opentracing_instrumentation import config
@@ -47,9 +48,9 @@ def test_middleware(with_peer_tags):
 
     tracer = opentracing.tracer
     span = mock.MagicMock()
-    with mock.patch.object(tracer, 'start_trace',
+    with mock.patch.object(tracer, 'start_span',
                            return_value=span) as start_trace, \
-            mock.patch.object(tracer, 'trace_context_from_text',
+            mock.patch.object(tracer, 'join',
                               return_value=None):
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2
@@ -62,15 +63,13 @@ def test_middleware(with_peer_tags):
 
     # now test server when it looks like there is a trace in the headers
     span = mock.MagicMock()
-    context = mock.MagicMock()
-    with mock.patch.object(tracer, 'join_trace',
-                           return_value=span) as join_trace, \
-            mock.patch.object(tracer, 'trace_context_from_text',
-                              return_value=context):
+    with mock.patch.object(tracer, 'join',
+                           return_value=span) as join_trace:
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2
         join_trace.assert_called_with(operation_name='my-test',
-                                      parent_trace_context=context)
+                                      format=Format.TEXT_MAP,
+                                      carrier=request.headers)
         span.set_tag.assert_any_call('http.url', request.full_url)
         if with_peer_tags:
             span.set_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')

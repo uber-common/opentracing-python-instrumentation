@@ -51,11 +51,8 @@ def install_patches():
         if statement:
             operation = '%s %s' % (operation,
                                    statement.split(' ', 1)[0].upper())
-        if get_current_span() is None:
-            span = opentracing.tracer.start_trace(
-                operation_name=operation)
-        else:
-            span = get_current_span().start_child(operation_name=operation)
+        span = opentracing.tracer.start_span(
+            operation_name=operation, parent=get_current_span())
         span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         if statement:
             span.set_tag('sql', statement)

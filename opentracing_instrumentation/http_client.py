@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 import re
 import opentracing
+from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation.config import CONFIG
 
@@ -38,15 +39,13 @@ def before_http_request(request, current_span_extractor):
     :return: returns child tracing span encapsulating this request
     """
 
-    op = request.operation
-    parent_span = current_span_extractor()
-    if parent_span is None:
-        span = opentracing.tracer.start_trace(operation_name=op)
-    else:
-        span = parent_span.start_child(operation_name=op)
+    span = opentracing.tracer.start_span(
+        operation_name=request.operation,
+        parent=current_span_extractor()
+    )
 
     span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
-    span.set_tag('http.url', request.full_url)
+    span.set_tag(tags.HTTP_URL, request.full_url)
 
     service_name = request.service_name
     host, port = request.host_port
@@ -57,13 +56,14 @@ def before_http_request(request, current_span_extractor):
     if port:
         span.set_tag(tags.PEER_PORT, port)
 
-    h_ctx, h_attr = opentracing.tracer.trace_context_to_text(
-        trace_context=span.trace_context)
-    for key, value in h_ctx.iteritems():
-        request.add_header(key, value)
-    if h_attr:
-        for key, value in h_attr.iteritems():
+    try:
+        carrier = {}
+        opentracing.tracer.inject(span=span, format=Format.TEXT_MAP,
+                                  carrier=carrier)
+        for key, value in carrier.iteritems():
             request.add_header(key, value)
+    except opentracing.UnsupportedFormatException:
+        pass
 
     return span
 

@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='opentracing_instrumentation',
-    version='0.4.3.dev0',
+    version='1.0.0.dev0',
     author='Yuri Shkuro',
     author_email='ys@uber.com',
     description='Tracing Instrumentation using OpenTracing API (http://opentracing.io)',
@@ -27,7 +27,7 @@ setup(
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
-        'opentracing>=0.6.3,<0.7.0',
+        'opentracing==1.0rc4',
     ],
     extras_require={
         'tests': [
@@ -35,7 +35,7 @@ setup(
             'flake8',
             'flake8-quotes',
             'mock<1.1.0',
-            'pytest',
+            'pytest>=2.7',
             'pytest-cov',
             'pytest-mock',
             'Sphinx',
