@@ -21,7 +21,7 @@
 from __future__ import absolute_import
 
 import logging
-
+import urllib
 import opentracing
 from opentracing import Format
 from opentracing.ext import tags
@@ -45,9 +45,12 @@ def before_request(request, tracer=None):
 
     operation = request.operation
     try:
+        carrier = {}
+        for key, value in request.headers.iteritems():
+            carrier[key] = urllib.unquote(value)
         span = tracer.join(operation_name=operation,
                            format=Format.TEXT_MAP,
-                           carrier=request.headers)
+                           carrier=carrier)
     except Exception as e:
         logging.exception('join failed: %s' % e)
         span = None

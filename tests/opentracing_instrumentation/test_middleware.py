@@ -69,7 +69,7 @@ def test_middleware(with_peer_tags):
         assert span == span2
         join_trace.assert_called_with(operation_name='my-test',
                                       format=Format.TEXT_MAP,
-                                      carrier=request.headers)
+                                      carrier={})
         span.set_tag.assert_any_call('http.url', request.full_url)
         if with_peer_tags:
             span.set_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
