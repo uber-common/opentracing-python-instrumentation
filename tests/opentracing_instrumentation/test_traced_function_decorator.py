@@ -27,7 +27,7 @@ import tornado.concurrent
 from tornado import gen
 from tornado.testing import AsyncTestCase, gen_test
 from opentracing_instrumentation import traced_function
-from opentracing_instrumentation import RequestContextManager
+from opentracing_instrumentation import span_in_stack_context
 
 patch_object = mock.patch.object
 
@@ -205,6 +205,5 @@ def run_coroutine_with_span(span, coro, *args, **kwargs):
     :param args: Positional args to func, if any.
     :param kwargs: Keyword args to func, if any.
     """
-    mgr = lambda: RequestContextManager(span)
-    with tornado.stack_context.StackContext(mgr):
+    with span_in_stack_context(span=span):
         return coro(*args, **kwargs)

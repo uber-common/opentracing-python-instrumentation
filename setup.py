@@ -38,6 +38,8 @@ setup(
             'pytest>=2.7',
             'pytest-cov',
             'pytest-mock',
+            'pytest-tornado',
+            'basictracer==1.0rc1',
             'Sphinx',
             'sphinx_rtd_theme',
         ]

@@ -23,8 +23,7 @@ import opentracing
 from opentracing_instrumentation.local_span import func_span
 from opentracing_instrumentation.client_hooks._dbapi2 import db_span, _COMMIT
 from opentracing_instrumentation.client_hooks._singleton import singleton
-from opentracing_instrumentation import RequestContextManager
-from opentracing import Tracer
+from opentracing_instrumentation import span_in_context
 
 
 def test_func_span_without_parent():
@@ -37,7 +36,7 @@ def test_func_span_without_parent():
 def test_func_span():
     tracer = opentracing.tracer
     span = tracer.start_span(operation_name='parent')
-    with RequestContextManager(span=span):
+    with span_in_context(span=span):
         with func_span('test') as child_span:
             assert span is child_span
         with func_span('test', tags={'x': 'y'}) as child_span:
@@ -52,7 +51,7 @@ def test_db_span_without_parent():
 def test_db_span():
     tracer = opentracing.tracer
     span = tracer.start_span(operation_name='parent')
-    with RequestContextManager(span=span):
+    with span_in_context(span=span):
         with db_span(_COMMIT, 'MySQLdb') as child_span:
             assert span is child_span
         with db_span('select * from X', 'MySQLdb') as child_span:

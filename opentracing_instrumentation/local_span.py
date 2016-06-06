@@ -22,8 +22,7 @@ import functools
 import contextlib2
 import opentracing
 import tornado.concurrent
-from . import get_current_span, RequestContextManager
-from .request_context import ThreadSafeStackContext
+from . import get_current_span, span_in_stack_context
 
 
 def func_span(func, tags=None, require_active_trace=False):
@@ -123,14 +122,11 @@ def traced_function(func=None, name=None, on_start=None,
         if callable(on_start):
             on_start(span, *args, **kwargs)
 
-        def mgr():
-            return RequestContextManager(span)
-
         # We explicitly invoke deactivation callback for the StackContext,
         # because there are scenarios when it gets retained forever, for
         # example when a Periodic Callback is scheduled lazily while in the
         # scope of a tracing StackContext.
-        with ThreadSafeStackContext(mgr) as deactivate_cb:
+        with span_in_stack_context(span) as deactivate_cb:
             try:
                 res = func(*args, **kwargs)
                 # Tornado co-routines usually return futures, so we must wait
