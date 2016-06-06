@@ -3,10 +3,10 @@
 History
 -------
 
-1.0.1 (unreleased)
+1.0.1 (2016-06-06)
 ------------------
 
-- Nothing changed yet.
+- Apply URL quote/unquote to values stored in the headers
 
 
 1.0.0 (2016-05-24)
