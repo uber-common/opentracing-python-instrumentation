@@ -3,10 +3,10 @@
 History
 -------
 
-1.0.2 (unreleased)
+1.1.0 (2016-06-09)
 ------------------
 
-- Nothing changed yet.
+- Change request context from Span to a wrapper object RequestContext
 
 
 1.0.1 (2016-06-06)
