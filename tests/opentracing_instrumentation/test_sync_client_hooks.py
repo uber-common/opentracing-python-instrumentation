@@ -28,7 +28,7 @@ from tornado.httputil import HTTPHeaders
 import opentracing
 from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
 from opentracing_instrumentation.config import CONFIG
-from opentracing_instrumentation.request_context import RequestContextManager
+from opentracing_instrumentation.request_context import span_in_context
 
 
 @contextlib.contextmanager
@@ -109,7 +109,7 @@ def _do_test(scheme='http', root_span=True):
             with mock.patch.object(opentracing.tracer,
                                    'start_span',
                                    return_value=span) as start_child:
-                with RequestContextManager(current_span):
+                with span_in_context(span=current_span):
                     resp = urllib2.urlopen(request)
                     start_child.assert_called_once_with(
                         operation_name='GET:antiquing',

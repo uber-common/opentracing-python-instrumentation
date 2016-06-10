@@ -19,5 +19,6 @@
 # THE SOFTWARE.
 from __future__ import absolute_import
 from .request_context import get_current_span  # noqa
-from .request_context import RequestContextManager  # noqa
+from .request_context import span_in_context  # noqa
+from .request_context import span_in_stack_context  # noqa
 from .local_span import traced_function  # noqa
