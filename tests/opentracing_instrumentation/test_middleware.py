@@ -32,8 +32,20 @@ from opentracing_instrumentation import config
 import pytest
 
 
-@pytest.mark.parametrize('with_peer_tags', [True, False])
-def test_middleware(with_peer_tags):
+@pytest.mark.parametrize('with_peer_tags,with_context', [
+    (True, True),
+    (False, True),
+    (True, False),
+    (False, False),
+])
+def test_middleware(with_peer_tags, with_context):
+    """
+    Tests http_server.before_request call
+
+    :param with_peer_tags: whether Request object exposes peer properties
+    :param with_context: whether the inbound request contains tracing context
+    :return:
+    """
     request = mock.MagicMock()
     request.full_url = 'http://localhost:12345/test'
     request.operation = 'my-test'
@@ -47,34 +59,40 @@ def test_middleware(with_peer_tags):
         request.caller_name = None
 
     tracer = opentracing.tracer
+    if with_context:
+        span_ctx = mock.MagicMock()
+    else:
+        span_ctx = None
+    p_extract = mock.patch.object(tracer, 'extract', return_value=span_ctx)
     span = mock.MagicMock()
-    with mock.patch.object(tracer, 'start_span',
-                           return_value=span) as start_trace, \
-            mock.patch.object(tracer, 'join',
-                              return_value=None):
+    p_start_span = mock.patch.object(tracer, 'start_span', return_value=span)
+    with p_extract as extract_call, p_start_span as start_span_call:
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2
-        start_trace.assert_called_with(operation_name='my-test')
-        span.set_tag.assert_any_call('http.url', request.full_url)
+        extract_call.assert_called_with(
+            format=Format.TEXT_MAP, carrier={})
+        expected_tags = {
+            'http.url': 'http://localhost:12345/test',
+            'span.kind': 'server'
+        }
         if with_peer_tags:
-            span.set_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
-            span.set_tag.assert_any_call(tags.PEER_PORT, 12345)
-            span.set_tag.assert_any_call(tags.PEER_SERVICE, 'test_middleware')
-
-    # now test server when it looks like there is a trace in the headers
-    span = mock.MagicMock()
-    with mock.patch.object(tracer, 'join',
-                           return_value=span) as join_trace:
-        span2 = http_server.before_request(request=request, tracer=tracer)
-        assert span == span2
-        join_trace.assert_called_with(operation_name='my-test',
-                                      format=Format.TEXT_MAP,
-                                      carrier={})
-        span.set_tag.assert_any_call('http.url', request.full_url)
-        if with_peer_tags:
-            span.set_tag.assert_any_call(tags.PEER_HOST_IPV4, 'localhost')
-            span.set_tag.assert_any_call(tags.PEER_PORT, 12345)
-            span.set_tag.assert_any_call(tags.PEER_SERVICE, 'test_middleware')
+            expected_tags.update({
+                'peer.service': 'test_middleware',
+                'span.kind': 'server',
+                'peer.ipv4': 'localhost',
+                'peer.port': 12345,
+            })
+        if with_context:
+            start_span_call.assert_called_with(
+                operation_name='my-test',
+                tags=expected_tags,
+                references=opentracing.ChildOf(span_ctx)
+            )
+        else:
+            start_span_call.assert_called_with(
+                operation_name='my-test',
+                tags=expected_tags,
+            )
 
 
 class AbstractRequestWrapperTest(unittest.TestCase):

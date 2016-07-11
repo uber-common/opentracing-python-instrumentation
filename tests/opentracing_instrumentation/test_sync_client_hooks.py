@@ -24,6 +24,7 @@ import urllib2
 import contextlib
 
 import mock
+import pytest
 from tornado.httputil import HTTPHeaders
 import opentracing
 from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
@@ -31,7 +32,7 @@ from opentracing_instrumentation.config import CONFIG
 from opentracing_instrumentation.request_context import span_in_context
 
 
-@contextlib.contextmanager
+@pytest.yield_fixture
 def install_hooks():
     old_opener = urllib2._opener
     old_callee_headers = CONFIG.callee_name_headers
@@ -41,35 +42,21 @@ def install_hooks():
     CONFIG.callee_name_headers = ['Remote-Loc']
     CONFIG.callee_endpoint_headers = ['Remote-Op']
 
-    yield
-
-    urllib2.install_opener(old_opener)
-    CONFIG.callee_name_headers = old_callee_headers
-    CONFIG.callee_endpoint_headers = old_endpoint_headers
-
-
-def test_http_root():
-    do_test(scheme='http', root_span=True)
+    try:
+        yield
+    except:
+        urllib2.install_opener(old_opener)
+        CONFIG.callee_name_headers = old_callee_headers
+        CONFIG.callee_endpoint_headers = old_endpoint_headers
 
 
-def test_https_root():
-    do_test(scheme='https', root_span=True)
-
-
-def test_http_child():
-    do_test(scheme='http', root_span=False)
-
-
-def test_https_child():
-    do_test(scheme='https', root_span=False)
-
-
-def do_test(scheme='http', root_span=True):
-    with install_hooks():
-        _do_test(scheme=scheme, root_span=root_span)
-
-
-def _do_test(scheme='http', root_span=True):
+@pytest.mark.parametrize('scheme,root_span', [
+    ('http', True),
+    ('http', False),
+    ('https', True),
+    ('https', False),
+])
+def test_urllib2(scheme, root_span, install_hooks):
     request = urllib2.Request('%s://localhost:9777/proxy' % scheme,
                               headers={'Remote-LOC': 'New New York',
                                        'Remote-Op': 'antiquing'})
@@ -82,43 +69,45 @@ def _do_test(scheme='http', root_span=True):
         def info(self):
             return None
 
+    if root_span:
+        root_span = mock.MagicMock()
+        root_span.context = mock.MagicMock()
+        root_span.finish = mock.MagicMock()
+        root_span.__exit__ = mock.MagicMock()
+    else:
+        root_span = None
+
     span = mock.MagicMock()
     span.set_tag = mock.MagicMock()
     span.finish = mock.MagicMock()
 
-    headers = {'TRACE-ID': '123'}
-
-    def inject(span, format, carrier):
+    def inject(span_context, format, carrier):
         carrier['TRACE-ID'] = '123'
 
-    with mock.patch('urllib2.AbstractHTTPHandler.do_open',
-                    return_value=Response()), \
-            mock.patch.object(opentracing.tracer, 'inject',
-                              side_effect=inject):
+    p_do_open = mock.patch('urllib2.AbstractHTTPHandler.do_open',
+                           return_value=Response())
+    p_start_span = mock.patch.object(opentracing.tracer, 'start_span',
+                                     return_value=span)
+    p_inject = mock.patch.object(opentracing.tracer, 'inject',
+                                 side_effect=inject)
+    p_current_span = span_in_context(span=root_span)
 
+    with p_do_open, p_start_span as start_call, p_inject, p_current_span:
+        resp = urllib2.urlopen(request)
+        expected_references = None
         if root_span:
-            with mock.patch.object(opentracing.tracer,
-                                   'start_span',
-                                   return_value=span) as ctx:
-                resp = urllib2.urlopen(request)
-                ctx.assert_called_once_with(
-                    operation_name='GET:antiquing', parent=None)
-                # TODO check client=True
-        else:
-            current_span = mock.MagicMock()
-            with mock.patch.object(opentracing.tracer,
-                                   'start_span',
-                                   return_value=span) as start_child:
-                with span_in_context(span=current_span):
-                    resp = urllib2.urlopen(request)
-                    start_child.assert_called_once_with(
-                        operation_name='GET:antiquing',
-                        parent=current_span)
-
+            expected_references = opentracing.ChildOf(root_span.context)
+        start_call.assert_called_once_with(
+            operation_name='GET:antiquing',
+            references=expected_references,
+            tags=None,
+        )
     assert resp is not None
-    assert span.set_tag.call_count >= 2
+    span.set_tag.assert_any_call('span.kind', 'client')
     assert span.__enter__.call_count == 1
     assert span.__exit__.call_count == 1, 'ensure finish() was called'
+    if root_span:
+        assert root_span.__exit__.call_count == 0, 'do not finish root span'
 
     # verify trace-id was correctly injected into headers
     norm_headers = HTTPHeaders(request.headers)

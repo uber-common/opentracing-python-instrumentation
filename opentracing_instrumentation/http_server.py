@@ -43,35 +43,43 @@ def before_request(request, tracer=None):
     if tracer is None:  # pragma: no cover
         tracer = opentracing.tracer
 
+    # we need to prepare tags upfront, mainly because RPC_SERVER tag must be
+    # set when starting the span, to support Zipkin's one-span-per-RPC model
+    tags_dict = {
+        tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER,
+        tags.HTTP_URL: request.full_url,
+    }
+
+    remote_ip = request.remote_ip
+    if remote_ip:
+        tags_dict[tags.PEER_HOST_IPV4] = remote_ip
+
+    caller_name = request.caller_name
+    if caller_name:
+        tags_dict[tags.PEER_SERVICE] = caller_name
+
+    remote_port = request.remote_port
+    if remote_port:
+        tags_dict[tags.PEER_PORT] = remote_port
+
     operation = request.operation
+    span = None
     try:
         carrier = {}
         for key, value in request.headers.iteritems():
             carrier[key] = urllib.unquote(value)
-        span = tracer.join(operation_name=operation,
-                           format=Format.TEXT_MAP,
-                           carrier=carrier)
+        span_ctx = tracer.extract(format=Format.TEXT_MAP, carrier=carrier)
+        if span_ctx:
+            span = tracer.start_span(
+                operation_name=operation,
+                references=opentracing.ChildOf(span_ctx),
+                tags=tags_dict
+            )
     except Exception as e:
-        logging.exception('join failed: %s' % e)
-        span = None
+        logging.exception('trace extract failed: %s' % e)
 
     if span is None:
-        span = tracer.start_span(operation_name=operation)
-
-    span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_SERVER)
-    span.set_tag(tags.HTTP_URL, request.full_url)
-
-    remote_ip = request.remote_ip
-    if remote_ip:
-        span.set_tag(tags.PEER_HOST_IPV4, remote_ip)
-
-    caller_name = request.caller_name
-    if caller_name:
-        span.set_tag(tags.PEER_SERVICE, caller_name)
-
-    remote_port = request.remote_port
-    if remote_port:
-        span.set_tag(tags.PEER_PORT, remote_port)
+        span = tracer.start_span(operation_name=operation, tags=tags_dict)
 
     return span
 

@@ -25,6 +25,7 @@ import opentracing
 from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation.config import CONFIG
+from . import utils
 
 
 def before_http_request(request, current_span_extractor):
@@ -40,7 +41,7 @@ def before_http_request(request, current_span_extractor):
     :return: returns child tracing span encapsulating this request
     """
 
-    span = opentracing.tracer.start_span(
+    span = utils.start_child_span(
         operation_name=request.operation,
         parent=current_span_extractor()
     )
@@ -59,7 +60,8 @@ def before_http_request(request, current_span_extractor):
 
     try:
         carrier = {}
-        opentracing.tracer.inject(span=span, format=Format.TEXT_MAP,
+        opentracing.tracer.inject(span_context=span.context,
+                                  format=Format.TEXT_MAP,
                                   carrier=carrier)
         for key, value in carrier.iteritems():
             request.add_header(key, urllib.quote(value))
