@@ -86,7 +86,7 @@ def test_middleware(with_peer_tags, with_context):
             start_span_call.assert_called_with(
                 operation_name='my-test',
                 tags=expected_tags,
-                references=opentracing.ChildOf(span_ctx)
+                references=opentracing.child_of(span_ctx)
             )
         else:
             start_span_call.assert_called_with(

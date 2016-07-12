@@ -35,7 +35,7 @@ def start_child_span(operation_name, tracer=None, parent=None, tags=None):
     """
     parent_ref = None
     if parent:
-        parent_ref = opentracing.ChildOf(parent.context)
+        parent_ref = opentracing.child_of(parent.context)
     tracer = tracer or opentracing.tracer
     return tracer.start_span(
         operation_name=operation_name,

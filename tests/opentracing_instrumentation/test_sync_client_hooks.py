@@ -96,7 +96,7 @@ def test_urllib2(scheme, root_span, install_hooks):
         resp = urllib2.urlopen(request)
         expected_references = None
         if root_span:
-            expected_references = opentracing.ChildOf(root_span.context)
+            expected_references = opentracing.child_of(root_span.context)
         start_call.assert_called_once_with(
             operation_name='GET:antiquing',
             references=expected_references,

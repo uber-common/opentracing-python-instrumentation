@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='opentracing_instrumentation',
-    version='2.0.0.dev0',
+    version='2.0.0.dev1',
     author='Yuri Shkuro',
     author_email='ys@uber.com',
     description='Tracing Instrumentation using OpenTracing API (http://opentracing.io)',
@@ -27,7 +27,7 @@ setup(
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
-        'opentracing==2.0.0.dev0',
+        'opentracing==2.0.0.dev1',
     ],
     extras_require={
         'tests': [
@@ -39,7 +39,7 @@ setup(
             'pytest-cov',
             'pytest-mock',
             'pytest-tornado',
-            'basictracer==2.0.0.dev0',
+            'basictracer==2.0.0.dev1',
             'Sphinx',
             'sphinx_rtd_theme',
         ]

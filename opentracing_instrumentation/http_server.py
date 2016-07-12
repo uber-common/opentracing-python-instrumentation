@@ -72,7 +72,7 @@ def before_request(request, tracer=None):
         if span_ctx:
             span = tracer.start_span(
                 operation_name=operation,
-                references=opentracing.ChildOf(span_ctx),
+                references=opentracing.child_of(span_ctx),
                 tags=tags_dict
             )
     except Exception as e:
