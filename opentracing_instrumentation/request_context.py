@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 import threading
+
+import opentracing
 import tornado.stack_context
 
 
@@ -61,8 +63,15 @@ class RequestContextManager(object):
         """
         return getattr(cls._state, 'context', None)
 
-    def __init__(self, context):
-        self._context = context
+    def __init__(self, context=None, span=None):
+        # normally we want the context parameter, but for backwards
+        # compatibility we make it optional and allow span as well
+        if span:
+            self._context = RequestContext(span=span)
+        elif isinstance(context, opentracing.Span):
+            self._context = RequestContext(span=context)
+        else:
+            self._context = context
 
     def __enter__(self):
         self._prev_context = self.__class__.current_context()
