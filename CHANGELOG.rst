@@ -3,7 +3,7 @@
 History
 -------
 
-1.1.1 (unreleased)
+1.1.1 (2016-07-14)
 ------------------
 
 - Support backwards compatible usage of RequestContextManager with span argument
