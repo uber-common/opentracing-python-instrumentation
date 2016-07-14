@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+import opentracing
 import tornado.stack_context
 from tornado import gen
 from tornado.testing import AsyncTestCase, gen_test
@@ -59,6 +60,15 @@ class TornadoTraceContextTest(AsyncTestCase):
         ctx = RequestContextManager(context=RequestContext(span='x'))
         assert ctx._context.span == 'x'
         assert RequestContextManager.current_context() is None
+
+    def test_backwards_compatible(self):
+        span = opentracing.Span(tracer=None)
+        mgr = RequestContextManager(span)  # span as positional arg
+        assert mgr._context.span == span
+        mgr = RequestContextManager(context=span)  # span context arg
+        assert mgr._context.span == span
+        mgr = RequestContextManager(span=span)  # span as span arg
+        assert mgr._context.span == span
 
 
 def run_coroutine_with_span(span, coro, *args, **kwargs):
