@@ -19,6 +19,9 @@
 # THE SOFTWARE.
 from __future__ import absolute_import
 
+import importlib
+import logging
+
 
 def install_all_patches():
     """
@@ -39,3 +42,53 @@ def install_all_patches():
     urllib.install_patches()
     urllib2.install_patches()
     requests.install_patches()
+
+
+def install_patches(patchers='all'):
+    """
+    Usually called from middleware to install client hooks
+    specified in the client_hooks section of the configuration.
+
+    :param patchers: a list of patchers to run. Acceptable values include:
+      * None - installs all client patches
+      * 'all' - installs all client patches
+      * empty list - does not install any patches
+      * list of function names - executes the functions
+    """
+    if patchers is None or patchers == 'all':
+        install_all_patches()
+        return
+    if type(patchers) is list:
+        for patch_func_name in patchers:
+            logging.info('Loading client hook %s', patch_func_name)
+            patch_func = _load_symbol(patch_func_name)
+            logging.info('Applying client hook %s', patch_func_name)
+            patch_func()
+        return
+    raise ValueError('patchers argument must be None, "all", or a list')
+
+
+def _load_symbol(name):
+    """Load a symbol by name.
+
+    :param str name: The name to load, specified by `module.attr`.
+    :returns: The attribute value. If the specified module does not contain
+              the requested attribute then `None` is returned.
+    """
+    module_name, key = name.rsplit('.', 1)
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError as err:
+        # it's possible the symbol is a class method
+        module_name, class_name = module_name.rsplit('.', 1)
+        module = importlib.import_module(module_name)
+        cls = getattr(module, class_name, None)
+        if cls:
+            attr = getattr(cls, key, None)
+        else:
+            raise err
+    else:
+        attr = getattr(module, key, None)
+    if not callable(attr):
+        raise ValueError('%s is not callable (was %r)' % (name, attr))
+    return attr

@@ -1,6 +1,11 @@
+sudo: required
+
 language: python
 python: 
   - "2.7"
+
+before_install:
+  - bash travis/install-protoc.sh
 
 install:
   - make install-ci

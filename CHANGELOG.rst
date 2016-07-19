@@ -3,10 +3,10 @@
 History
 -------
 
-1.1.2 (unreleased)
+1.2.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add config-based client_hooks patching
 
 
 1.1.1 (2016-07-14)
