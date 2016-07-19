@@ -6,7 +6,7 @@ History
 1.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add config-based client_hooks patching
 
 
 1.1.1 (2016-07-14)
