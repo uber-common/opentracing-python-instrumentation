@@ -3,7 +3,7 @@
 History
 -------
 
-1.2.0 (unreleased)
+1.2.0 (2016-07-19)
 ------------------
 
 - Add config-based client_hooks patching
