@@ -30,6 +30,7 @@ def install_all_patches():
     If a specific module is not available on the path, it is ignored.
     """
     from . import mysqldb
+    from . import strict_redis
     from . import sqlalchemy
     from . import tornado_http
     from . import urllib
@@ -37,6 +38,7 @@ def install_all_patches():
     from . import requests
 
     mysqldb.install_patches()
+    strict_redis.install_patches()
     sqlalchemy.install_patches()
     tornado_http.install_patches()
     urllib.install_patches()
