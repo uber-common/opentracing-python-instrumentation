@@ -3,10 +3,10 @@
 History
 -------
 
-1.2.1 (unreleased)
+1.3.0 (2016-07-29)
 ------------------
 
-- Nothing changed yet.
+- Add Redis hooks
 
 
 1.2.0 (2016-07-19)
