@@ -39,6 +39,7 @@ setup(
             'pytest-cov',
             'pytest-mock',
             'pytest-tornado',
+            'redis',
             'basictracer==1.0rc1',
             'Sphinx',
             'sphinx_rtd_theme',

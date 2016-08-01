@@ -6,7 +6,7 @@ History
 1.3.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add more information to Redis hooks
 
 
 1.3.0 (2016-07-29)
@@ -72,7 +72,7 @@ History
 0.3.9 (2016-02-04)
 ------------------
 
-- Set SPAN_KIND tag for all RPC spans. 
+- Set SPAN_KIND tag for all RPC spans.
 - Allow traced_function to start a trace.
 
 

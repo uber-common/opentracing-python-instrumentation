@@ -18,7 +18,6 @@ sudo apt-get install build-essential
 sudo ./configure
 sudo make
 sudo make check
-sudo make install 
+sudo make install
 sudo ldconfig
 protoc --version
-
