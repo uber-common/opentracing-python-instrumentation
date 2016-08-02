@@ -16,7 +16,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.from __future__ import absolute_import
+# THE SOFTWARE.
 
 import opentracing
 from opentracing.ext import tags as ext_tags
@@ -33,6 +33,9 @@ except ImportError:  # pragma: no cover
 
 # regex to match an ipv4 address
 IPV4_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+
+METHOD_NAMES = ['execute_command', 'get', 'set', 'setex']
+ORIG_METHODS = {}
 
 
 @singleton
@@ -62,7 +65,21 @@ def install_patches():
 
     redis.StrictRedis.peer_tags = peer_tags
 
-    old_execute_command = redis.StrictRedis.execute_command
+    for name in METHOD_NAMES:
+        ORIG_METHODS[name] = getattr(redis.StrictRedis, name)
+
+    def get(self, key):
+        self._extra_tags = [('redis.key', key)]
+        return ORIG_METHODS['get'](self, key)
+
+    def set(self, key, val):
+        self._extra_tags = [('redis.key', key)]
+        return ORIG_METHODS['set'](self, key, val)
+
+    def setex(self, key, ttl, val):
+        self._extra_tags = [('redis.key', key),
+                            ('redis.ttl', ttl)]
+        return ORIG_METHODS['setex'](self, key, ttl, val)
 
     def execute_command(self, cmd, *args, **kwargs):
         operation_name = 'redis:%s' % (cmd,)
@@ -70,9 +87,23 @@ def install_patches():
             operation_name=operation_name, parent=get_current_span())
         span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(ext_tags.PEER_SERVICE, 'redis')
+
+        # set the peer information (remote host/port)
         for tag_key, tag_val in self.peer_tags():
             span.set_tag(tag_key, tag_val)
-        with span:
-            return old_execute_command(self, cmd, *args, **kwargs)
 
-    redis.StrictRedis.execute_command = execute_command
+        # for certain commands we'll add extra attributes such as the redis key
+        for tag_key, tag_val in getattr(self, '_extra_tags', []):
+            span.set_tag(tag_key, tag_val)
+
+        with span:
+            return ORIG_METHODS['execute_command'](self, cmd, *args, **kwargs)
+
+    for name in METHOD_NAMES:
+        setattr(redis.StrictRedis, name, locals()[name])
+
+
+def reset_patches():
+    for name in METHOD_NAMES:
+        setattr(redis.StrictRedis, name, ORIG_METHODS[name])
+    ORIG_METHODS.clear()
