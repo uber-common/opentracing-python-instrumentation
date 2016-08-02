@@ -3,7 +3,7 @@
 History
 -------
 
-1.3.1 (unreleased)
+1.4.0 (2016-08-02)
 ------------------
 
 - Add more information to Redis hooks
