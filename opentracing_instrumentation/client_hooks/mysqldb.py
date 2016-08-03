@@ -16,7 +16,8 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.from __future__ import absolute_import
+# THE SOFTWARE.
+from __future__ import absolute_import
 from ._dbapi2 import ContextManagerConnectionWrapper as ConnectionWrapper
 from ._dbapi2 import ConnectionFactory
 from _singleton import singleton
