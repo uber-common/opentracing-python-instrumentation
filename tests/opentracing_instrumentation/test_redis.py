@@ -90,3 +90,11 @@ def test_setex(client, key):
     assert client.get(key) == VAL
     new_span.assert_called_with(operation_name='redis:SETEX', parent=None)
     check_span(span, key)
+
+
+def test_setnx(client, key):
+    with mock_span() as (new_span, span):
+        client.setnx(key, VAL)
+    assert client.get(key) == VAL
+    new_span.assert_called_with(operation_name='redis:SETNX', parent=None)
+    check_span(span, key)
