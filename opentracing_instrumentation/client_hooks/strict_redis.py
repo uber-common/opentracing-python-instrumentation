@@ -98,6 +98,8 @@ def install_patches():
 
         # for certain commands we'll add extra attributes such as the redis key
         for tag_key, tag_val in getattr(self, '_extra_tags', []):
+            if isinstance(tag_val, basestring):
+                tag_val = tag_val.encode('string_escape')
             span.set_tag(tag_key, tag_val)
         self._extra_tags = []
 
