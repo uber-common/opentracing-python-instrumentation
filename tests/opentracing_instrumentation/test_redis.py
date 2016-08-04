@@ -88,7 +88,7 @@ def spans(monkeypatch):
 
 
 def check_span(span, key):
-    assert span.tags['redis.key'] == key
+    assert span.tags['redis.key'] == key.encode('string_escape')
     assert span.tags[tags.SPAN_KIND] == tags.SPAN_KIND_RPC_CLIENT
     assert span.tags[tags.PEER_SERVICE] == 'redis'
 
