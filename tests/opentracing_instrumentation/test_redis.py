@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 import contextlib
-import mock
 import redis
 import os
 
@@ -53,48 +52,85 @@ def key():
     return os.urandom(8).encode('hex')
 
 
-@contextlib.contextmanager
-def mock_span():
-    tracer = opentracing.tracer
-    span = mock.MagicMock()
+class Span(object):
 
-    with mock.patch.object(tracer, 'start_span', return_value=span) as new_span,\
-         mock.patch.object(tracer, 'join', return_value=None):
-        yield new_span, span
+    def __init__(self):
+        self.tags = {}
+
+    def set_tag(self, key, val):
+        self.tags[key] = val
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+
+class StartSpan(object):
+
+    def __init__(self, span):
+        self.kwargs = None
+        self.args = None
+        self.span = span
+
+    def __call__(self, *args, **kwargs):
+        self.kwargs = kwargs
+        self.args = args
+        return self.span
+
+
+def spans(monkeypatch):
+    span = Span()
+    start_span = StartSpan(span)
+    monkeypatch.setattr(opentracing.tracer, 'start_span', start_span)
+    return span, start_span
 
 
 def check_span(span, key):
-    span.set_tag.assert_any_call('redis.key', key)
-    span.set_tag.assert_any_call(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
-    span.set_tag.assert_any_call(tags.PEER_SERVICE, 'redis')
+    assert span.tags['redis.key'] == key
+    assert span.tags[tags.SPAN_KIND] == tags.SPAN_KIND_RPC_CLIENT
+    assert span.tags[tags.PEER_SERVICE] == 'redis'
 
 
-def test_get(client, key):
-    with mock_span() as (new_span, span):
-        client.get(key)
-    new_span.assert_called_with(operation_name='redis:GET', parent=None)
+def test_get(monkeypatch, client, key):
+    span, start_span = spans(monkeypatch)
+    client.get(key)
+    assert start_span.kwargs['operation_name'] == 'redis:GET'
     check_span(span, key)
 
 
-def test_set(client, key):
-    with mock_span() as (new_span, span):
-        client.set(key, VAL)
+def test_set(monkeypatch, client, key):
+    span, start_span = spans(monkeypatch)
+    client.set(key, VAL)
+    assert start_span.kwargs['operation_name'] == 'redis:SET'
+    check_span(span, key)
     assert client.get(key) == VAL
-    new_span.assert_called_with(operation_name='redis:SET', parent=None)
+
+
+def test_setex(monkeypatch, client, key):
+    span, start_span = spans(monkeypatch)
+    client.setex(key, 60, VAL)
+    assert start_span.kwargs['operation_name'] == 'redis:SETEX'
     check_span(span, key)
-
-
-def test_setex(client, key):
-    with mock_span() as (new_span, span):
-        client.setex(key, 60, VAL)
     assert client.get(key) == VAL
-    new_span.assert_called_with(operation_name='redis:SETEX', parent=None)
+
+
+def test_setnx(monkeypatch, client, key):
+    span, start_span = spans(monkeypatch)
+    client.setnx(key, VAL)
+    assert start_span.kwargs['operation_name'] == 'redis:SETNX'
     check_span(span, key)
-
-
-def test_setnx(client, key):
-    with mock_span() as (new_span, span):
-        client.setnx(key, VAL)
     assert client.get(key) == VAL
-    new_span.assert_called_with(operation_name='redis:SETNX', parent=None)
-    check_span(span, key)
+
+
+def test_key_is_cleared(monkeypatch, client, key):
+    # first do a GET that sets the key
+    span, start_span = spans(monkeypatch)
+    client.get(key)
+    assert span.tags['redis.key'] == key
+
+    # now do an ECHO, and make sure redis.key is not used
+    span, start_span = spans(monkeypatch)
+    client.echo('hello world')
+    assert 'redis.key' not in span.tags
