@@ -94,12 +94,10 @@ def test_urllib2(scheme, root_span, install_hooks):
 
     with p_do_open, p_start_span as start_call, p_inject, p_current_span:
         resp = urllib2.urlopen(request)
-        expected_references = None
-        if root_span:
-            expected_references = opentracing.child_of(root_span.context)
+        expected_references = root_span.context if root_span else None
         start_call.assert_called_once_with(
             operation_name='GET:antiquing',
-            references=expected_references,
+            child_of=expected_references,
             tags=None,
         )
     assert resp is not None

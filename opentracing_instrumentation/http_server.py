@@ -63,23 +63,19 @@ def before_request(request, tracer=None):
         tags_dict[tags.PEER_PORT] = remote_port
 
     operation = request.operation
-    span = None
     try:
         carrier = {}
         for key, value in request.headers.iteritems():
             carrier[key] = urllib.unquote(value)
-        span_ctx = tracer.extract(format=Format.TEXT_MAP, carrier=carrier)
-        if span_ctx:
-            span = tracer.start_span(
-                operation_name=operation,
-                references=opentracing.child_of(span_ctx),
-                tags=tags_dict
-            )
+        parent_ctx = tracer.extract(format=Format.TEXT_MAP, carrier=carrier)
     except Exception as e:
         logging.exception('trace extract failed: %s' % e)
+        parent_ctx = None
 
-    if span is None:
-        span = tracer.start_span(operation_name=operation, tags=tags_dict)
+    span = tracer.start_span(
+        operation_name=operation,
+        child_of=parent_ctx,
+        tags=tags_dict)
 
     return span
 

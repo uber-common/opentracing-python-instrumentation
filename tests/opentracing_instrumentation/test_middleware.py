@@ -82,17 +82,11 @@ def test_middleware(with_peer_tags, with_context):
                 'peer.ipv4': 'localhost',
                 'peer.port': 12345,
             })
-        if with_context:
-            start_span_call.assert_called_with(
-                operation_name='my-test',
-                tags=expected_tags,
-                references=opentracing.child_of(span_ctx)
-            )
-        else:
-            start_span_call.assert_called_with(
-                operation_name='my-test',
-                tags=expected_tags,
-            )
+        start_span_call.assert_called_with(
+            operation_name='my-test',
+            tags=expected_tags,
+            child_of=span_ctx
+        )
 
 
 class AbstractRequestWrapperTest(unittest.TestCase):

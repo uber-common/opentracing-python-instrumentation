@@ -73,7 +73,7 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                         r = s.func1_1(123)
                     start_child.assert_called_once_with(
                         operation_name=func,
-                        references=opentracing.child_of(parent.context),
+                        child_of=parent.context,
                         tags=None)
                     assert child.set_tag.call_count == 0
                     assert child.error.call_count == 0
@@ -122,7 +122,7 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 assert r == 'oh yeah'
                 start_child.assert_called_once_with(
                     operation_name='func2_modified',  # overridden name
-                    references=opentracing.child_of(parent.context),
+                    child_of=parent.context,
                     tags=None)
                 assert child.set_tag.call_count == 0
 
@@ -154,7 +154,7 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 assert r == 'oh yeah'
                 start_child.assert_called_once_with(
                     operation_name='func3',
-                    references=opentracing.child_of(parent.context),
+                    child_of=parent.context,
                     tags=None)
                 child.set_tag.assert_called_once_with(
                     'call_site_tag', 'somewhere')
@@ -187,7 +187,7 @@ class TracedFuctionDecoratorTest(AsyncTestCase):
                 r = s.func4(123)
                 assert r == 'oh yeah'
                 start.assert_called_once_with(
-                    operation_name='func4', references=None, tags=None)
+                    operation_name='func4', child_of=None, tags=None)
 
             # verify no new trace or child span is started
             with patch_object(opentracing.tracer, 'start_span') as start:

@@ -33,12 +33,9 @@ def start_child_span(operation_name, tracer=None, parent=None, tags=None):
     :param tags: optional tags
     :return: new span
     """
-    parent_ref = None
-    if parent:
-        parent_ref = opentracing.child_of(parent.context)
     tracer = tracer or opentracing.tracer
     return tracer.start_span(
         operation_name=operation_name,
-        references=parent_ref,
+        child_of=parent.context if parent else None,
         tags=tags
     )

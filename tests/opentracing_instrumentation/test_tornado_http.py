@@ -47,7 +47,9 @@ def tornado_http_patch():
 
 @pytest.fixture
 def tracer():
-    return BasicTracer(recorder=InMemoryRecorder())
+    t = BasicTracer(recorder=InMemoryRecorder())
+    t.register_required_propagators()
+    return t
 
 
 @pytest.mark.gen_test(run_sync=False)
