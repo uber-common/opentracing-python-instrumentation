@@ -6,7 +6,7 @@ History
 1.4.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix relative import
 
 
 1.4.0 (2016-08-02)
