@@ -27,12 +27,12 @@ setup(
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
-        'opentracing==2.0.0.dev1',
+        'opentracing>=1.1,<1.2',
     ],
     extras_require={
         'tests': [
             'doubles',
-            'flake8',
+            'flake8<3',  # see https://github.com/zheller/flake8-quotes/issues/29
             'flake8-quotes',
             'mock<1.1.0',
             'pytest>=2.7',
@@ -40,6 +40,7 @@ setup(
             'pytest-mock',
             'pytest-tornado',
             'basictracer==2.0.0.dev1',
+            'redis',
             'Sphinx',
             'sphinx_rtd_theme',
         ]

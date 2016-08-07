@@ -6,7 +6,25 @@ History
 2.0.0 (unreleased)
 ------------------
 
-- Upgrade to OpenTracing API with SpanContext
+- Upgrade to OpenTracing API 1.1 with SpanContext
+
+
+1.4.0 (2016-08-02)
+------------------
+
+- Add more information to Redis hooks
+
+
+1.3.0 (2016-07-29)
+------------------
+
+- Add Redis hooks
+
+
+1.2.0 (2016-07-19)
+------------------
+
+- Add config-based client_hooks patching
 
 
 1.1.1 (2016-07-14)
@@ -60,7 +78,7 @@ History
 0.3.9 (2016-02-04)
 ------------------
 
-- Set SPAN_KIND tag for all RPC spans. 
+- Set SPAN_KIND tag for all RPC spans.
 - Allow traced_function to start a trace.
 
 
