@@ -70,7 +70,7 @@ def test_middleware(with_peer_tags, with_context):
         span2 = http_server.before_request(request=request, tracer=tracer)
         assert span == span2
         extract_call.assert_called_with(
-            format=Format.TEXT_MAP, carrier={})
+            format=Format.HTTP_HEADERS, carrier={})
         expected_tags = {
             'http.url': 'http://localhost:12345/test',
             'span.kind': 'server'

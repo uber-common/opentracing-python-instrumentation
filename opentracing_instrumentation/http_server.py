@@ -67,7 +67,9 @@ def before_request(request, tracer=None):
         carrier = {}
         for key, value in request.headers.iteritems():
             carrier[key] = urllib.unquote(value)
-        parent_ctx = tracer.extract(format=Format.TEXT_MAP, carrier=carrier)
+        parent_ctx = tracer.extract(
+            format=Format.HTTP_HEADERS, carrier=carrier
+        )
     except Exception as e:
         logging.exception('trace extract failed: %s' % e)
         parent_ctx = None
