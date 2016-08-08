@@ -20,9 +20,8 @@
 from __future__ import absolute_import
 import functools
 import contextlib2
-import opentracing
 import tornado.concurrent
-from . import get_current_span, span_in_stack_context
+from . import get_current_span, span_in_stack_context, utils
 
 
 def func_span(func, tags=None, require_active_trace=False):
@@ -57,8 +56,7 @@ def func_span(func, tags=None, require_active_trace=False):
 
     # TODO convert func to a proper name: module:class.func
     operation_name = str(func)
-
-    return opentracing.tracer.start_span(
+    return utils.start_child_span(
         operation_name=operation_name, parent=current_span, tags=tags)
 
 
@@ -117,7 +115,7 @@ def traced_function(func=None, name=None, on_start=None,
         if parent_span is None and require_active_trace:
             return func(*args, **kwargs)
 
-        span = opentracing.tracer.start_span(
+        span = utils.start_child_span(
                 operation_name=operation_name, parent=parent_span)
         if callable(on_start):
             on_start(span, *args, **kwargs)

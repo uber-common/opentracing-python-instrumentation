@@ -3,10 +3,16 @@
 History
 -------
 
-1.4.2 (unreleased)
+2.0.0 (2016-08-07)
 ------------------
 
-- Nothing changed yet.
+- Upgrade to OpenTracing API 1.1 with SpanContext
+
+
+1.4.1 (2016-08-07)
+------------------
+
+- Fix relative import
 
 
 1.4.1 (2016-08-07)

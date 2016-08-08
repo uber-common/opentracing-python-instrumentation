@@ -21,12 +21,14 @@
 from __future__ import absolute_import
 
 import opentracing
-import tornado.stack_context
+from opentracing_instrumentation.request_context import (
+    get_current_span,
+    span_in_stack_context,
+    RequestContext,
+    RequestContextManager,
+)
 from tornado import gen
 from tornado.testing import AsyncTestCase, gen_test
-from opentracing_instrumentation.request_context import \
-    get_current_span, span_in_stack_context, \
-    RequestContextManager, RequestContext
 
 
 class TornadoTraceContextTest(AsyncTestCase):
@@ -62,7 +64,7 @@ class TornadoTraceContextTest(AsyncTestCase):
         assert RequestContextManager.current_context() is None
 
     def test_backwards_compatible(self):
-        span = opentracing.Span(tracer=None)
+        span = opentracing.tracer.start_span(operation_name='test')
         mgr = RequestContextManager(span)  # span as positional arg
         assert mgr._context.span == span
         mgr = RequestContextManager(context=span)  # span context arg

@@ -1,6 +1,5 @@
 
 import pytest
-import threading
 import tornado.gen
 import tornado.web
 import tornado.httpserver
@@ -8,20 +7,26 @@ import tornado.netutil
 import tornado.httpclient
 from mock import patch
 from opentracing_instrumentation import span_in_stack_context
-from opentracing_instrumentation.client_hooks.tornado_http \
-    import install_patches, reset_patchers
-from basictracer import BasicTracer, SpanRecorder
+from opentracing_instrumentation.client_hooks.tornado_http import (
+    install_patches,
+    reset_patchers
+)
+from opentracing_instrumentation.http_server import (
+    before_request,
+    TornadoRequestWrapper
+)
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
 import opentracing
-from opentracing import Format
 
 
 class Handler(tornado.web.RequestHandler):
 
     def get(self):
-        span = opentracing.tracer.join(
-            'server', Format.TEXT_MAP, self.request.headers)
-        self.write('{:x}'.format(span.context.trace_id))
-        self.set_status(200)
+        request = TornadoRequestWrapper(self.request)
+        with before_request(request, tracer=opentracing.tracer) as span:
+            self.write('{:x}'.format(span.context.trace_id))
+            self.set_status(200)
 
 
 @pytest.fixture
@@ -41,26 +46,10 @@ def tornado_http_patch():
 
 
 @pytest.fixture
-def span_recorder():
-    class InMemoryRecorder(SpanRecorder):
-        def __init__(self):
-            self.spans = []
-            self.mux = threading.Lock()
-
-        def record_span(self, span):
-            with self.mux:
-                self.spans.append(span)
-
-        def get_spans(self):
-            with self.mux:
-                return self.spans[:]
-
-    return InMemoryRecorder()
-
-
-@pytest.fixture
-def tracer(span_recorder):
-    return BasicTracer(recorder=span_recorder)
+def tracer():
+    t = BasicTracer(recorder=InMemoryRecorder())
+    t.register_required_propagators()
+    return t
 
 
 @pytest.mark.gen_test(run_sync=False)

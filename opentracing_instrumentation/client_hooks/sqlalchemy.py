@@ -22,8 +22,8 @@ from __future__ import absolute_import
 
 import logging
 
-import opentracing
 from opentracing.ext import tags as ext_tags
+from .. import utils
 from ..request_context import get_current_span
 from ._singleton import singleton
 
@@ -51,7 +51,7 @@ def install_patches():
         if statement:
             operation = '%s %s' % (operation,
                                    statement.split(' ', 1)[0].upper())
-        span = opentracing.tracer.start_span(
+        span = utils.start_child_span(
             operation_name=operation, parent=get_current_span())
         span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         if statement:
