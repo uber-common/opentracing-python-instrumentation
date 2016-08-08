@@ -15,6 +15,12 @@ History
 - Fix relative import
 
 
+1.4.1 (2016-08-07)
+------------------
+
+- Fix relative import
+
+
 1.4.0 (2016-08-02)
 ------------------
 
