@@ -25,7 +25,7 @@ import opentracing
 from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation.config import CONFIG
-from . import utils
+from opentracing_instrumentation import utils
 
 
 def before_http_request(request, current_span_extractor):
