@@ -3,7 +3,7 @@
 History
 -------
 
-2.0.0 (unreleased)
+2.0.0 (2016-08-07)
 ------------------
 
 - Upgrade to OpenTracing API 1.1 with SpanContext
