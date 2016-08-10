@@ -3,10 +3,10 @@
 History
 -------
 
-2.0.1 (unreleased)
+2.0.1 (2016-08-09)
 ------------------
 
-- Nothing changed yet.
+- Correct API in strict_redis patcher.
 
 
 2.0.0 (2016-08-07)
