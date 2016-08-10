@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-import opentracing
+
 from opentracing.ext import tags as ext_tags
 import re
 
