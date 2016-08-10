@@ -25,6 +25,7 @@ import re
 
 from opentracing_instrumentation import get_current_span
 from ._singleton import singleton
+from .. import utils
 
 try:
     import redis
@@ -88,7 +89,7 @@ def install_patches():
 
     def execute_command(self, cmd, *args, **kwargs):
         operation_name = 'redis:%s' % (cmd,)
-        span = opentracing.tracer.start_span(
+        span = utils.start_child_span(
             operation_name=operation_name, parent=get_current_span())
         span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(ext_tags.PEER_SERVICE, 'redis')
