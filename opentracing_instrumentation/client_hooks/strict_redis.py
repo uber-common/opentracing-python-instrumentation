@@ -74,9 +74,11 @@ def install_patches():
         self._extra_tags = [('redis.key', name)]
         return ORIG_METHODS['get'](self, name, **kwargs)
 
-    def set(self, name, value, **kwargs):
+    def set(self, name, value, ex=None, px=None, nx=False, xx=False, **kwargs):
         self._extra_tags = [('redis.key', name)]
-        return ORIG_METHODS['set'](self, name, value, **kwargs)
+        return ORIG_METHODS['set'](self, name, value,
+                                   ex=ex, px=px, nx=nx, xx=xx,
+                                   **kwargs)
 
     def setex(self, name, time, value, **kwargs):
         self._extra_tags = [('redis.key', name),
