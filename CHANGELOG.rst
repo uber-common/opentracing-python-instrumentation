@@ -3,10 +3,10 @@
 History
 -------
 
-2.0.2 (unreleased)
+2.0.2 (2016-08-10)
 ------------------
 
-- Nothing changed yet.
+- Fix monkeypatched argument names in redis hooks
 
 
 2.0.1 (2016-08-09)
