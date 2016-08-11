@@ -5,7 +5,6 @@ python:
   - "2.7"
 
 before_install:
-  - bash travis/install-protoc.sh
   - bash travis/install-redis.sh
 
 install:
