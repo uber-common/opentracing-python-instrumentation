@@ -70,22 +70,22 @@ def install_patches():
     for name in METHOD_NAMES:
         ORIG_METHODS[name] = getattr(redis.StrictRedis, name)
 
-    def get(self, key):
-        self._extra_tags = [('redis.key', key)]
-        return ORIG_METHODS['get'](self, key)
+    def get(self, name, **kwargs):
+        self._extra_tags = [('redis.key', name)]
+        return ORIG_METHODS['get'](self, name, **kwargs)
 
-    def set(self, key, val):
-        self._extra_tags = [('redis.key', key)]
-        return ORIG_METHODS['set'](self, key, val)
+    def set(self, name, value, **kwargs):
+        self._extra_tags = [('redis.key', name)]
+        return ORIG_METHODS['set'](self, name, value, **kwargs)
 
-    def setex(self, key, ttl, val):
-        self._extra_tags = [('redis.key', key),
-                            ('redis.ttl', ttl)]
-        return ORIG_METHODS['setex'](self, key, ttl, val)
+    def setex(self, name, time, value, **kwargs):
+        self._extra_tags = [('redis.key', name),
+                            ('redis.ttl', time)]
+        return ORIG_METHODS['setex'](self, name, time, value, **kwargs)
 
-    def setnx(self, key, val):
-        self._extra_tags = [('redis.key', key)]
-        return ORIG_METHODS['setnx'](self, key, val)
+    def setnx(self, name, value, **kwargs):
+        self._extra_tags = [('redis.key', name)]
+        return ORIG_METHODS['setnx'](self, name, value, **kwargs)
 
     def execute_command(self, cmd, *args, **kwargs):
         operation_name = 'redis:%s' % (cmd,)
