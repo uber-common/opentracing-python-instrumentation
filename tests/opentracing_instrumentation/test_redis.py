@@ -97,6 +97,7 @@ def test_get(monkeypatch, client, key):
     client.get(key)
     assert start_span.kwargs['operation_name'] == 'redis:GET'
     check_span(span, key)
+    client.get(name=key)
 
 
 def test_set(monkeypatch, client, key):
@@ -105,6 +106,7 @@ def test_set(monkeypatch, client, key):
     assert start_span.kwargs['operation_name'] == 'redis:SET'
     check_span(span, key)
     assert client.get(key) == VAL
+    client.set(name=key, value=VAL, ex=1)
 
 
 def test_setex(monkeypatch, client, key):
@@ -113,6 +115,7 @@ def test_setex(monkeypatch, client, key):
     assert start_span.kwargs['operation_name'] == 'redis:SETEX'
     check_span(span, key)
     assert client.get(key) == VAL
+    client.setex(name=key, time=60, value=VAL)
 
 
 def test_setnx(monkeypatch, client, key):
@@ -121,6 +124,7 @@ def test_setnx(monkeypatch, client, key):
     assert start_span.kwargs['operation_name'] == 'redis:SETNX'
     check_span(span, key)
     assert client.get(key) == VAL
+    client.setnx(name=key, value=VAL)
 
 
 def test_key_is_cleared(monkeypatch, client, key):
