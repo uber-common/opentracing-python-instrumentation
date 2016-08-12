@@ -107,6 +107,7 @@ def test_set(monkeypatch, client, key):
     check_span(span, key)
     assert client.get(key) == VAL
     client.set(name=key, value=VAL, ex=1)
+    client.set(key, VAL, 1)
 
 
 def test_setex(monkeypatch, client, key):
