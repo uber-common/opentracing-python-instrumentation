@@ -3,10 +3,10 @@
 History
 -------
 
-2.0.3 (unreleased)
+2.0.3 (2016-08-11)
 ------------------
 
-- Nothing changed yet.
+- Match redis.set() signature
 
 
 2.0.2 (2016-08-10)
