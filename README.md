@@ -5,6 +5,30 @@
 A collection of instrumentation tools to enable tracing with 
 [OpenTracing API](http://opentracing.github.io).
 
+## What's inside
+
+### Supported client frameworks
+
+The following libraries are instrumented for tracing in this module:
+ * `urllib2`
+ * `requests`
+ * `SQLAlchemy`
+ * `MySQLdb`
+ * Tornado HTTP client
+ *  `redis`
+
+### Server instrumentation
+
+For inbound requests a helper function `before_request` is provided for creating middleware for frameworks like Flask and uWSGI.
+
+### Manual instrumentation
+
+Finally, a `@traced_function` decorator is provided for manual instrumentation.
+
+### In-process Context Propagation
+
+`request_context` implements thread-local based context propagation facility.
+
 ## Usage
 
 This library provides two types of instrumentation, explicit instrumentation
