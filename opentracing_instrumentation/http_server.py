@@ -66,7 +66,7 @@ def before_request(request, tracer=None):
     try:
         carrier = {}
         for key, value in request.headers.iteritems():
-            carrier[key] = urllib.unquote(value)
+            carrier[key] = value
         parent_ctx = tracer.extract(
             format=Format.HTTP_HEADERS, carrier=carrier
         )
@@ -194,8 +194,6 @@ class WSGIRequestWrapper(AbstractRequestWrapper):
 
         :return: Reconstructed URL from WSGI environment.
         """
-        from urllib import quote
-
         environ = self.wsgi_environ
         url = environ['wsgi.url_scheme'] + '://'
 
@@ -211,8 +209,8 @@ class WSGIRequestWrapper(AbstractRequestWrapper):
                 if environ['SERVER_PORT'] != '80':
                     url += ':' + environ['SERVER_PORT']
 
-        url += quote(environ.get('SCRIPT_NAME', ''))
-        url += quote(environ.get('PATH_INFO', ''))
+        url += urllib.quote(environ.get('SCRIPT_NAME', ''))
+        url += urllib.quote(environ.get('PATH_INFO', ''))
         if environ.get('QUERY_STRING'):
             url += '?' + environ['QUERY_STRING']
         return url

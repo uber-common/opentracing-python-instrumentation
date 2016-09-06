@@ -20,7 +20,6 @@
 
 from __future__ import absolute_import
 import re
-import urllib
 import opentracing
 from opentracing import Format
 from opentracing.ext import tags
@@ -64,7 +63,7 @@ def before_http_request(request, current_span_extractor):
                                   format=Format.HTTP_HEADERS,
                                   carrier=carrier)
         for key, value in carrier.iteritems():
-            request.add_header(key, urllib.quote(value))
+            request.add_header(key, value)
     except opentracing.UnsupportedFormatException:
         pass
 
