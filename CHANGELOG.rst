@@ -3,10 +3,10 @@
 History
 -------
 
-2.0.4 (unreleased)
+2.1.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Remove url encoding/decoding when using HTTP_HEADERS codecs
 
 
 2.0.3 (2016-08-11)
