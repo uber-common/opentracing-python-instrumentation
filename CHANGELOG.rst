@@ -3,7 +3,7 @@
 History
 -------
 
-2.1.0 (unreleased)
+2.1.0 (2016-09-08)
 ------------------
 
 - Remove url encoding/decoding when using HTTP_HEADERS codecs
