@@ -20,10 +20,7 @@
 
 from __future__ import absolute_import
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import object
-import urllib.request, urllib.error, urllib.parse
+import urllib2
 import contextlib
 
 import mock
@@ -48,7 +45,7 @@ def install_hooks():
     try:
         yield
     except:
-        urllib.request.install_opener(old_opener)
+        urllib2.install_opener(old_opener)
         CONFIG.callee_name_headers = old_callee_headers
         CONFIG.callee_endpoint_headers = old_endpoint_headers
 
@@ -60,7 +57,7 @@ def install_hooks():
     ('https', False),
 ])
 def test_urllib2(scheme, root_span, install_hooks):
-    request = urllib.request.Request('%s://localhost:9777/proxy' % scheme,
+    request = urllib2.Request('%s://localhost:9777/proxy' % scheme,
                               headers={'Remote-LOC': 'New New York',
                                        'Remote-Op': 'antiquing'})
 
@@ -96,7 +93,7 @@ def test_urllib2(scheme, root_span, install_hooks):
     p_current_span = span_in_context(span=root_span)
 
     with p_do_open, p_start_span as start_call, p_inject, p_current_span:
-        resp = urllib.request.urlopen(request)
+        resp = urllib2.urlopen(request)
         expected_references = root_span.context if root_span else None
         start_call.assert_called_once_with(
             operation_name='GET:antiquing',

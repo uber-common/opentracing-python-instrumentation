@@ -26,6 +26,7 @@ from builtins import object
 import logging
 import urllib.request, urllib.parse, urllib.error
 import opentracing
+import six
 from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation import config
@@ -68,7 +69,7 @@ def before_request(request, tracer=None):
     operation = request.operation
     try:
         carrier = {}
-        for key, value in request.headers.items():
+        for key, value in six.iteritems(request.headers):
             carrier[key] = value
         parent_ctx = tracer.extract(
             format=Format.HTTP_HEADERS, carrier=carrier
@@ -185,7 +186,7 @@ class WSGIRequestWrapper(AbstractRequestWrapper):
         # collects wsgi_environ.iteritems() during iteration.
         headers = {
             key[p_len:].replace('_', '-').lower():
-                val for (key, val) in list(wsgi_environ.items())
+                val for (key, val) in wsgi_environ.items()
             if key.startswith(prefix)}
         return headers
 

@@ -20,10 +20,8 @@
 
 from __future__ import absolute_import
 
-from future import standard_library
-standard_library.install_aliases()
 import logging
-
+import six
 from opentracing.ext import tags as ext_tags
 from opentracing_instrumentation import get_current_span
 from .. import utils
@@ -34,15 +32,21 @@ log = logging.getLogger(__name__)
 
 @singleton
 def install_patches():
-    import urllib.request, urllib.parse, urllib.error
-    import urllib.parse
+    if six.PY3:
+        # The old urllib does not exist in Py3, so delegate to urllib2 patcher
+        from . import urllib2
+        urllib2.install_patches()
+        return
+
+    import urllib
+    import urlparse
 
     log.info('Instrumenting urllib methods for tracing')
 
-    class TracedURLOpener(urllib.request.FancyURLopener):
+    class TracedURLOpener(urllib.FancyURLopener):
 
         def open(self, fullurl, data=None):
-            parsed_url = urllib.parse.urlparse(fullurl)
+            parsed_url = urlparse.urlparse(fullurl)
             host = parsed_url.hostname or None
             port = parsed_url.port or None
 
@@ -61,7 +65,7 @@ def install_patches():
                 # TODO add callee service name
                 # TODO add headers to propagate trace
                 # cannot use super here, this is an old style class
-                fileobj = urllib.request.FancyURLopener.open(self, fullurl, data)
+                fileobj = urllib.FancyURLopener.open(self, fullurl, data)
                 if fileobj.getcode() is not None:
                     span.set_tag('http.status_code', fileobj.getcode())
 
@@ -70,4 +74,4 @@ def install_patches():
         def retrieve(self, url, filename=None, reporthook=None, data=None):
             raise NotImplementedError
 
-    urllib.request._urlopener = TracedURLOpener()
+    urllib._urlopener = TracedURLOpener()

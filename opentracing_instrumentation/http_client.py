@@ -22,6 +22,7 @@ from __future__ import absolute_import
 from builtins import object
 import re
 import opentracing
+import six
 from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation.config import CONFIG
@@ -63,7 +64,7 @@ def before_http_request(request, current_span_extractor):
         opentracing.tracer.inject(span_context=span.context,
                                   format=Format.HTTP_HEADERS,
                                   carrier=carrier)
-        for key, value in carrier.items():
+        for key, value in six.iteritems(carrier):
             request.add_header(key, value)
     except opentracing.UnsupportedFormatException:
         pass
