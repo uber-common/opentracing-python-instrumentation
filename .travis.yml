@@ -3,9 +3,11 @@ sudo: required
 language: python
 
 matrix:
-    include:
-    - python: '2.7'
-    - python: '3.3'
+  include:
+  - python: '2.7'
+    env: COVER=1
+#  - python: '3.3'
+#    env: COVER=0
 
 before_install:
   - bash travis/install-redis.sh
