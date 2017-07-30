@@ -24,7 +24,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import object
 import logging
-import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 import opentracing
 import six
 from opentracing import Format

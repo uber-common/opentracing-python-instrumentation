@@ -117,7 +117,7 @@ def traced_function(func=None, name=None, on_start=None,
             return func(*args, **kwargs)
 
         span = utils.start_child_span(
-                operation_name=operation_name, parent=parent_span)
+            operation_name=operation_name, parent=parent_span)
         if callable(on_start):
             on_start(span, *args, **kwargs)
 

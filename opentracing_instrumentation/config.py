@@ -19,9 +19,9 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-
-
 from builtins import object
+
+
 class _Config(object):
     def __init__(self, app_name=None):
         self.app_name = app_name
