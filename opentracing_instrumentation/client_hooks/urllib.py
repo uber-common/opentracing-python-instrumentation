@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
 import logging
 
 from opentracing.ext import tags as ext_tags
@@ -32,15 +34,15 @@ log = logging.getLogger(__name__)
 
 @singleton
 def install_patches():
-    import urllib
-    import urlparse
+    import urllib.request, urllib.parse, urllib.error
+    import urllib.parse
 
     log.info('Instrumenting urllib methods for tracing')
 
-    class TracedURLOpener(urllib.FancyURLopener):
+    class TracedURLOpener(urllib.request.FancyURLopener):
 
         def open(self, fullurl, data=None):
-            parsed_url = urlparse.urlparse(fullurl)
+            parsed_url = urllib.parse.urlparse(fullurl)
             host = parsed_url.hostname or None
             port = parsed_url.port or None
 
@@ -59,7 +61,7 @@ def install_patches():
                 # TODO add callee service name
                 # TODO add headers to propagate trace
                 # cannot use super here, this is an old style class
-                fileobj = urllib.FancyURLopener.open(self, fullurl, data)
+                fileobj = urllib.request.FancyURLopener.open(self, fullurl, data)
                 if fileobj.getcode() is not None:
                     span.set_tag('http.status_code', fileobj.getcode())
 
@@ -68,4 +70,4 @@ def install_patches():
         def retrieve(self, url, filename=None, reporthook=None, data=None):
             raise NotImplementedError
 
-    urllib._urlopener = TracedURLOpener()
+    urllib.request._urlopener = TracedURLOpener()

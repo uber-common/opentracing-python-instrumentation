@@ -20,8 +20,10 @@
 
 from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
 import logging
-import urllib
+import urllib.request, urllib.parse, urllib.error
 
 from ..request_context import get_current_span
 from ..http_client import AbstractRequestWrapper
@@ -65,9 +67,9 @@ def install_patches():
     class RequestWrapper(AbstractRequestWrapper):
         def __init__(self, request):
             self.request = request
-            self.scheme, rest = urllib.splittype(request.url)
+            self.scheme, rest = urllib.parse.splittype(request.url)
             if self.scheme and rest:
-                self.host_str, _ = urllib.splithost(rest)
+                self.host_str, _ = urllib.parse.splithost(rest)
             else:
                 self.host_str = ''
 

@@ -20,6 +20,8 @@
 
 from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
 import logging
 
 from tornado.httputil import HTTPHeaders
@@ -34,8 +36,8 @@ log = logging.getLogger(__name__)
 
 @singleton
 def install_patches():
-    import httplib
-    import urllib2
+    import http.client
+    import urllib.request, urllib.error, urllib.parse
 
     log.info('Instrumenting urllib2 methods for tracing')
 
@@ -86,15 +88,15 @@ def install_patches():
             return split_host_and_port(host_string=host_string,
                                        scheme=self.request.get_type())
 
-    class TracedHTTPHandler(build_handler(urllib2.HTTPHandler)):
+    class TracedHTTPHandler(build_handler(urllib.request.HTTPHandler)):
 
         def http_open(self, req):
-            return self.do_open(req, httplib.HTTPConnection)
+            return self.do_open(req, http.client.HTTPConnection)
 
-    class TracedHTTPSHandler(build_handler(urllib2.HTTPSHandler)):
+    class TracedHTTPSHandler(build_handler(urllib.request.HTTPSHandler)):
 
         def https_open(self, req):
-            return self.do_open(req, httplib.HTTPSConnection)
+            return self.do_open(req, http.client.HTTPSConnection)
 
-    opener = urllib2.build_opener(TracedHTTPHandler, TracedHTTPSHandler)
-    urllib2.install_opener(opener)
+    opener = urllib.request.build_opener(TracedHTTPHandler, TracedHTTPSHandler)
+    urllib.request.install_opener(opener)
