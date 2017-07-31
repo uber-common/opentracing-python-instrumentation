@@ -20,7 +20,9 @@
 
 from __future__ import absolute_import
 
-import urllib2
+from future import standard_library
+standard_library.install_aliases()
+
 import mock
 import pytest
 from tornado.httputil import HTTPHeaders
@@ -31,10 +33,27 @@ from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
 from opentracing_instrumentation.config import CONFIG
 from opentracing_instrumentation.request_context import span_in_context
 
+import urllib.request
+import six
+if six.PY2:
+    import urllib2
+
 
 @pytest.yield_fixture
-def install_hooks():
-    old_opener = urllib2._opener
+def install_hooks(request):
+    urllibver = request.getfixturevalue('urllibver')
+
+    if urllibver == 'urllib2':
+        if six.PY3:
+            try:
+                yield None
+            except:
+                return
+        module = urllib2
+    else:
+        module = urllib.request
+
+    old_opener = module._opener
     old_callee_headers = CONFIG.callee_name_headers
     old_endpoint_headers = CONFIG.callee_endpoint_headers
 
@@ -43,9 +62,9 @@ def install_hooks():
     CONFIG.callee_endpoint_headers = ['Remote-Op']
 
     try:
-        yield
+        yield module
     except:
-        urllib2.install_opener(old_opener)
+        module.install_opener(old_opener)
         CONFIG.callee_name_headers = old_callee_headers
         CONFIG.callee_endpoint_headers = old_endpoint_headers
 
@@ -63,13 +82,22 @@ def tracer():
         opentracing.tracer = old_tracer
 
 
-@pytest.mark.parametrize('scheme,root_span', [
-    ('http', True),
-    ('http', False),
-    ('https', True),
-    ('https', False),
+@pytest.mark.parametrize('urllibver,scheme,root_span', [
+    ('urllib2', 'http', True),
+    ('urllib2', 'http', False),
+    ('urllib2', 'https', True),
+    ('urllib2', 'https', False),
+    ('urllib.request', 'http', True),
+    ('urllib.request', 'http', False),
+    ('urllib.request', 'https', True),
+    ('urllib.request', 'https', False),
 ])
-def test_urllib2(scheme, root_span, install_hooks, tracer):
+def test_urllib2(urllibver, scheme, root_span, install_hooks, tracer):
+
+    module = install_hooks
+
+    if module is None:
+        pytest.skip('Skipping %s on Py3' % urllibver)
 
     class Response(object):
         def __init__(self):
@@ -84,17 +112,27 @@ def test_urllib2(scheme, root_span, install_hooks, tracer):
     else:
         root_span = None
 
-    # ideally we could have started a test server and tested with real HTTP
+    # ideally we should have started a test server and tested with real HTTP
     # request, but doing that for https is more difficult, so we mock the
-    # actual request sending part.
-    p_do_open = mock.patch('urllib2.AbstractHTTPHandler.do_open',
-                           return_value=Response())
+    # request sending part.
+    if urllibver == 'urllib2':
+        p_do_open = mock.patch(
+            'urllib2.AbstractHTTPHandler.do_open', return_value=Response()
+        )
+    else:
+        cls = module.AbstractHTTPHandler
+        p_do_open = mock._patch_object(
+            cls, 'do_open', return_value=Response()
+        )
 
     with p_do_open, span_in_context(span=root_span):
-        request = urllib2.Request('%s://localhost:9777/proxy' % scheme,
-                                  headers={'Remote-LOC': 'New New York',
-                                           'Remote-Op': 'antiquing'})
-        resp = urllib2.urlopen(request)
+        request = module.Request(
+            '%s://localhost:9777/proxy' % scheme,
+            headers={
+                'Remote-LOC': 'New New York',
+                'Remote-Op': 'antiquing'
+            })
+        resp = module.urlopen(request)
 
     assert resp.code == 200
     assert len(tracer.recorder.get_spans()) == 1

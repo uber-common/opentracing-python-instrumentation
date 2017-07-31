@@ -21,6 +21,10 @@
 from __future__ import absolute_import
 
 import logging
+import six
+
+from future import standard_library
+standard_library.install_aliases()
 
 from tornado.httputil import HTTPHeaders
 from opentracing_instrumentation.request_context import get_current_span
@@ -34,12 +38,10 @@ log = logging.getLogger(__name__)
 
 @singleton
 def install_patches():
-    import httplib
-    import urllib2
+    import http.client
+    import urllib.request
 
-    log.info('Instrumenting urllib2 methods for tracing')
-
-    def build_handler(base_type):
+    def build_handler(base_type, base_cls=None):
         """Build a urrllib2 handler from a base_type."""
 
         class DerivedHandler(base_type):
@@ -51,7 +53,11 @@ def install_patches():
                     request=request_wrapper,
                     current_span_extractor=get_current_span)
                 with span:
-                    resp = urllib2.AbstractHTTPHandler.do_open(self, conn, req)
+                    if base_cls:
+                        # urllib2.AbstractHTTPHandler doesn't support super()
+                        resp = base_cls.do_open(self, conn, req)
+                    else:
+                        resp = super(DerivedHandler, self).do_open(conn, req)
                     if resp.code is not None:
                         span.set_tag('http.status_code', resp.code)
                 return resp
@@ -86,15 +92,25 @@ def install_patches():
             return split_host_and_port(host_string=host_string,
                                        scheme=self.request.get_type())
 
-    class TracedHTTPHandler(build_handler(urllib2.HTTPHandler)):
+    def install_for_module(module, do_open_base=None):
+        httpBase = build_handler(module.HTTPHandler, do_open_base)
+        httpsBase = build_handler(module.HTTPSHandler, do_open_base)
 
-        def http_open(self, req):
-            return self.do_open(req, httplib.HTTPConnection)
+        class TracedHTTPHandler(httpBase):
+            def http_open(self, req):
+                return self.do_open(req, http.client.HTTPConnection)
 
-    class TracedHTTPSHandler(build_handler(urllib2.HTTPSHandler)):
+        class TracedHTTPSHandler(httpsBase):
+            def https_open(self, req):
+                return self.do_open(req, http.client.HTTPSConnection)
 
-        def https_open(self, req):
-            return self.do_open(req, httplib.HTTPSConnection)
+        log.info('Instrumenting %s for tracing' % module.__name__)
+        opener = module.build_opener(TracedHTTPHandler, TracedHTTPSHandler)
+        module.install_opener(opener)
 
-    opener = urllib2.build_opener(TracedHTTPHandler, TracedHTTPSHandler)
-    urllib2.install_opener(opener)
+    if six.PY2:
+        import urllib2
+        base = urllib2.AbstractHTTPHandler
+        install_for_module(urllib2, base)
+
+    install_for_module(urllib.request)
