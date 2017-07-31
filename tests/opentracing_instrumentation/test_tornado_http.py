@@ -72,4 +72,4 @@ def test_http_fetch(base_url, http_client, tornado_http_patch, tracer):
 
         span.finish()
     assert response.code == 200
-    assert response.body == trace_id
+    assert bytes(response.body) == bytes(trace_id)
