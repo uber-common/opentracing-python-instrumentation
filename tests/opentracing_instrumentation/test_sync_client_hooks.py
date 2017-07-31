@@ -45,10 +45,8 @@ def install_hooks(request):
 
     if urllibver == 'urllib2':
         if six.PY3:
-            try:
-                yield None
-            except:
-                return
+            yield None
+            return
         module = urllib2
     else:
         module = urllib.request
@@ -61,12 +59,11 @@ def install_hooks(request):
     CONFIG.callee_name_headers = ['Remote-Loc']
     CONFIG.callee_endpoint_headers = ['Remote-Op']
 
-    try:
-        yield module
-    except:
-        module.install_opener(old_opener)
-        CONFIG.callee_name_headers = old_callee_headers
-        CONFIG.callee_endpoint_headers = old_endpoint_headers
+    yield module
+
+    module.install_opener(old_opener)
+    CONFIG.callee_name_headers = old_callee_headers
+    CONFIG.callee_endpoint_headers = old_endpoint_headers
 
 
 @pytest.yield_fixture

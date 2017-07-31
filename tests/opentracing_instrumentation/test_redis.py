@@ -20,7 +20,7 @@
 
 from builtins import object
 import redis
-import os
+import random
 
 import opentracing
 from opentracing.ext import tags
@@ -49,7 +49,7 @@ def client():
 
 @pytest.fixture()
 def key():
-    return os.urandom(8).encode('hex')
+    return '%x' % random.randint(1, 10000000)
 
 
 class Span(object):
