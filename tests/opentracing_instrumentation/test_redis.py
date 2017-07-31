@@ -30,7 +30,7 @@ from opentracing_instrumentation.client_hooks import strict_redis
 import pytest
 
 
-VAL = 'opentracing is fun and easy!'
+VAL = b'opentracing is fun and easy!'
 
 
 @pytest.yield_fixture(autouse=True, scope='module')
