@@ -21,7 +21,7 @@
 from __future__ import absolute_import
 
 import logging
-
+import six
 from opentracing.ext import tags as ext_tags
 from opentracing_instrumentation import get_current_span
 from .. import utils
@@ -32,6 +32,12 @@ log = logging.getLogger(__name__)
 
 @singleton
 def install_patches():
+    if six.PY3:
+        # The old urllib does not exist in Py3, so delegate to urllib2 patcher
+        from . import urllib2
+        urllib2.install_patches()
+        return
+
     import urllib
     import urlparse
 

@@ -18,8 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from builtins import object
 import redis
-import os
+import random
 
 import opentracing
 from opentracing.ext import tags
@@ -29,7 +30,7 @@ from opentracing_instrumentation.client_hooks import strict_redis
 import pytest
 
 
-VAL = 'opentracing is fun and easy!'
+VAL = b'opentracing is fun and easy!'
 
 
 @pytest.yield_fixture(autouse=True, scope='module')
@@ -48,7 +49,7 @@ def client():
 
 @pytest.fixture()
 def key():
-    return os.urandom(8).encode('hex')
+    return '%x' % random.randint(1, 10000000)
 
 
 class Span(object):

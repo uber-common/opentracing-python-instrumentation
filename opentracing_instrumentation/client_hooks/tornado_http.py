@@ -20,9 +20,12 @@
 
 from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import functools
 import logging
-import urlparse
+import urllib.parse
 
 from tornado.httputil import HTTPHeaders
 from opentracing_instrumentation.http_client import AbstractRequestWrapper
@@ -158,7 +161,7 @@ class TornadoRequestWrapper(AbstractRequestWrapper):
 
     @property
     def host_port(self):
-        res = urlparse.urlparse(self.full_url)
+        res = urllib.parse.urlparse(self.full_url)
         if res:
             return split_host_and_port(host_string=res.netloc,
                                        scheme=res.scheme)

@@ -23,11 +23,13 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=[
+        'future',
         'futures',
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
         'opentracing>=1.1,<1.3',
+        'six',
     ],
     extras_require={
         'tests': [
@@ -37,6 +39,7 @@ setup(
             'mock<1.1.0',
             'pytest>=2.7',
             'pytest-cov',
+            'pytest-localserver',
             'pytest-mock',
             'pytest-tornado',
             'basictracer>=2.1,<2.2',

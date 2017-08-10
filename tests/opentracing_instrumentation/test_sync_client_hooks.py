@@ -20,21 +20,38 @@
 
 from __future__ import absolute_import
 
-import urllib2
-import contextlib
+from future import standard_library
+standard_library.install_aliases()
 
 import mock
 import pytest
 from tornado.httputil import HTTPHeaders
 import opentracing
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
 from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
 from opentracing_instrumentation.config import CONFIG
 from opentracing_instrumentation.request_context import span_in_context
 
+import urllib.request
+import six
+if six.PY2:
+    import urllib2
+
 
 @pytest.yield_fixture
-def install_hooks():
-    old_opener = urllib2._opener
+def install_hooks(request):
+    urllibver = request.getfixturevalue('urllibver')
+
+    if urllibver == 'urllib2':
+        if six.PY3:
+            yield None
+            return
+        module = urllib2
+    else:
+        module = urllib.request
+
+    old_opener = module._opener
     old_callee_headers = CONFIG.callee_name_headers
     old_endpoint_headers = CONFIG.callee_endpoint_headers
 
@@ -42,24 +59,42 @@ def install_hooks():
     CONFIG.callee_name_headers = ['Remote-Loc']
     CONFIG.callee_endpoint_headers = ['Remote-Op']
 
+    yield module
+
+    module.install_opener(old_opener)
+    CONFIG.callee_name_headers = old_callee_headers
+    CONFIG.callee_endpoint_headers = old_endpoint_headers
+
+
+@pytest.yield_fixture
+def tracer():
+    t = BasicTracer(recorder=InMemoryRecorder())
+    t.register_required_propagators()
+    old_tracer = opentracing.tracer
+    opentracing.tracer = t
+
     try:
-        yield
+        yield t
     except:
-        urllib2.install_opener(old_opener)
-        CONFIG.callee_name_headers = old_callee_headers
-        CONFIG.callee_endpoint_headers = old_endpoint_headers
+        opentracing.tracer = old_tracer
 
 
-@pytest.mark.parametrize('scheme,root_span', [
-    ('http', True),
-    ('http', False),
-    ('https', True),
-    ('https', False),
+@pytest.mark.parametrize('urllibver,scheme,root_span', [
+    ('urllib2', 'http', True),
+    ('urllib2', 'http', False),
+    ('urllib2', 'https', True),
+    ('urllib2', 'https', False),
+    ('urllib.request', 'http', True),
+    ('urllib.request', 'http', False),
+    ('urllib.request', 'https', True),
+    ('urllib.request', 'https', False),
 ])
-def test_urllib2(scheme, root_span, install_hooks):
-    request = urllib2.Request('%s://localhost:9777/proxy' % scheme,
-                              headers={'Remote-LOC': 'New New York',
-                                       'Remote-Op': 'antiquing'})
+def test_urllib2(urllibver, scheme, root_span, install_hooks, tracer):
+
+    module = install_hooks
+
+    if module is None:
+        pytest.skip('Skipping %s on Py3' % urllibver)
 
     class Response(object):
         def __init__(self):
@@ -70,43 +105,40 @@ def test_urllib2(scheme, root_span, install_hooks):
             return None
 
     if root_span:
-        root_span = mock.MagicMock()
-        root_span.context = mock.MagicMock()
-        root_span.finish = mock.MagicMock()
-        root_span.__exit__ = mock.MagicMock()
+        root_span = tracer.start_span('root-span')
     else:
         root_span = None
 
-    span = mock.MagicMock()
-    span.set_tag = mock.MagicMock()
-    span.finish = mock.MagicMock()
-
-    def inject(span_context, format, carrier):
-        carrier['TRACE-ID'] = '123'
-
-    p_do_open = mock.patch('urllib2.AbstractHTTPHandler.do_open',
-                           return_value=Response())
-    p_start_span = mock.patch.object(opentracing.tracer, 'start_span',
-                                     return_value=span)
-    p_inject = mock.patch.object(opentracing.tracer, 'inject',
-                                 side_effect=inject)
-    p_current_span = span_in_context(span=root_span)
-
-    with p_do_open, p_start_span as start_call, p_inject, p_current_span:
-        resp = urllib2.urlopen(request)
-        expected_references = root_span.context if root_span else None
-        start_call.assert_called_once_with(
-            operation_name='GET:antiquing',
-            child_of=expected_references,
-            tags=None,
+    # ideally we should have started a test server and tested with real HTTP
+    # request, but doing that for https is more difficult, so we mock the
+    # request sending part.
+    if urllibver == 'urllib2':
+        p_do_open = mock.patch(
+            'urllib2.AbstractHTTPHandler.do_open', return_value=Response()
         )
-    assert resp is not None
-    span.set_tag.assert_any_call('span.kind', 'client')
-    assert span.__enter__.call_count == 1
-    assert span.__exit__.call_count == 1, 'ensure finish() was called'
-    if root_span:
-        assert root_span.__exit__.call_count == 0, 'do not finish root span'
+    else:
+        cls = module.AbstractHTTPHandler
+        p_do_open = mock._patch_object(
+            cls, 'do_open', return_value=Response()
+        )
+
+    with p_do_open, span_in_context(span=root_span):
+        request = module.Request(
+            '%s://localhost:9777/proxy' % scheme,
+            headers={
+                'Remote-LOC': 'New New York',
+                'Remote-Op': 'antiquing'
+            })
+        resp = module.urlopen(request)
+
+    assert resp.code == 200
+    assert len(tracer.recorder.get_spans()) == 1
+
+    span = tracer.recorder.get_spans()[0]
+    assert span.tags.get('span.kind') == 'client'
 
     # verify trace-id was correctly injected into headers
+    # we wrap the headers to avoid having to deal with upper/lower case
     norm_headers = HTTPHeaders(request.headers)
-    assert norm_headers.get('trace-id') == '123'
+    trace_id_header = norm_headers.get('ot-tracer-traceid')
+    assert trace_id_header == '%x' % span.context.trace_id

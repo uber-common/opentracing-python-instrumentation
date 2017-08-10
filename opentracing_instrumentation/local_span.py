@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from __future__ import absolute_import
+from builtins import str
 import functools
 import contextlib2
 import tornado.concurrent
@@ -116,7 +117,7 @@ def traced_function(func=None, name=None, on_start=None,
             return func(*args, **kwargs)
 
         span = utils.start_child_span(
-                operation_name=operation_name, parent=parent_span)
+            operation_name=operation_name, parent=parent_span)
         if callable(on_start):
             on_start(span, *args, **kwargs)
 

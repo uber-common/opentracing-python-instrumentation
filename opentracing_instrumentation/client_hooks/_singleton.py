@@ -20,6 +20,7 @@
 
 from __future__ import absolute_import
 
+from builtins import range
 import functools
 
 
@@ -30,7 +31,7 @@ def singleton(func):
 
     Not thread-safe.
     """
-    NOT_CALLED, IN_CALL, CALLED = range(3)
+    NOT_CALLED, IN_CALL, CALLED = list(range(3))
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

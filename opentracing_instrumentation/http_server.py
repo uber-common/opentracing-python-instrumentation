@@ -20,9 +20,13 @@
 
 from __future__ import absolute_import
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import logging
-import urllib
+import urllib.parse
 import opentracing
+import six
 from opentracing import Format
 from opentracing.ext import tags
 from opentracing_instrumentation import config
@@ -65,7 +69,7 @@ def before_request(request, tracer=None):
     operation = request.operation
     try:
         carrier = {}
-        for key, value in request.headers.iteritems():
+        for key, value in six.iteritems(request.headers):
             carrier[key] = value
         parent_ctx = tracer.extract(
             format=Format.HTTP_HEADERS, carrier=carrier
@@ -209,8 +213,8 @@ class WSGIRequestWrapper(AbstractRequestWrapper):
                 if environ['SERVER_PORT'] != '80':
                     url += ':' + environ['SERVER_PORT']
 
-        url += urllib.quote(environ.get('SCRIPT_NAME', ''))
-        url += urllib.quote(environ.get('PATH_INFO', ''))
+        url += urllib.parse.quote(environ.get('SCRIPT_NAME', ''))
+        url += urllib.parse.quote(environ.get('PATH_INFO', ''))
         if environ.get('QUERY_STRING'):
             url += '?' + environ['QUERY_STRING']
         return url
