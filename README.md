@@ -3,7 +3,7 @@
 # opentracing-python-instrumentation
 
 A collection of instrumentation tools to enable tracing with 
-[OpenTracing API](http://opentracing.github.io).
+[OpenTracing API](http://opentracing.io).
 
 ## What's inside
 
