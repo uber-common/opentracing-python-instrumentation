@@ -24,8 +24,6 @@ import abc
 
 import six
 
-_interceptors = []
-
 
 @six.add_metaclass(abc.ABCMeta)
 class OpentracingInterceptor(object):
