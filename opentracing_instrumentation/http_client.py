@@ -28,7 +28,7 @@ from opentracing import Format
 from opentracing.ext import tags
 
 from opentracing_instrumentation.config import CONFIG
-from opentracing_instrumentation.interceptors import Interceptors
+from opentracing_instrumentation.interceptors import ClientInterceptors
 from opentracing_instrumentation import utils
 
 
@@ -63,7 +63,7 @@ def before_http_request(request, current_span_extractor):
         span.set_tag(tags.PEER_PORT, port)
 
     # fire interceptors
-    for interceptor in Interceptors.get_interceptors():
+    for interceptor in ClientInterceptors.get_interceptors():
         interceptor.process(request=request, span=span)
 
     try:

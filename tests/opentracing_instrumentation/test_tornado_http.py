@@ -29,8 +29,8 @@ from opentracing_instrumentation.http_server import (
     before_request
 )
 from opentracing_instrumentation.interceptors import (
-    Interceptors,
-    OpentracingInterceptor
+    ClientInterceptors,
+    OpenTracingInterceptor
 )
 
 
@@ -92,9 +92,6 @@ def test_http_fetch(base_url, http_client, tornado_http_patch, tracer):
 @pytest.mark.gen_test(run_sync=False)
 def test_http_fetch_with_interceptor(base_url, http_client, tornado_http_patch, tracer):
 
-    mock_interceptor = Mock(spec=OpentracingInterceptor)
-    Interceptors.append(mock_interceptor)
-
     @tornado.gen.coroutine
     def make_downstream_call():
         resp = yield http_client.fetch(base_url)
@@ -106,14 +103,18 @@ def test_http_fetch_with_interceptor(base_url, http_client, tornado_http_patch, 
         span = tracer.start_span('test')
         trace_id = '{:x}'.format(span.context.trace_id)
 
-        with span_in_stack_context(span):
-            response = make_downstream_call()
-        response = yield response  # cannot yield when in StackContext context
+        with patch('opentracing_instrumentation.http_client.ClientInterceptors') as MockClientInterceptors:
+            mock_interceptor = Mock(spec=OpenTracingInterceptor)
+            MockClientInterceptors.get_interceptors.return_value = [mock_interceptor]
 
-        mock_interceptor.process.assert_called_once()
-        assert mock_interceptor.process.call_args_list[0][1]['span'].tracer == tracer
+            with span_in_stack_context(span):
+                response = make_downstream_call()
+            response = yield response  # cannot yield when in StackContext context
 
-        span.finish()
+            mock_interceptor.process.assert_called_once()
+            assert mock_interceptor.process.call_args_list[0][1]['span'].tracer == tracer
+
+            span.finish()
 
     assert response.code == 200
     assert response.body.decode('utf-8') == trace_id
