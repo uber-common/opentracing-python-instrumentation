@@ -1,23 +1,37 @@
 
 import pytest
+
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
+from mock import (
+    ANY,
+    Mock,
+    patch
+)
+import opentracing
+from opentracing.span import (
+    Span,
+    SpanContext
+)
 import tornado.gen
 import tornado.web
 import tornado.httpserver
 import tornado.netutil
 import tornado.httpclient
-from mock import patch
+
 from opentracing_instrumentation import span_in_stack_context
 from opentracing_instrumentation.client_hooks.tornado_http import (
     install_patches,
     reset_patchers
 )
 from opentracing_instrumentation.http_server import (
-    before_request,
-    TornadoRequestWrapper
+    TornadoRequestWrapper,
+    before_request
 )
-from basictracer import BasicTracer
-from basictracer.recorder import InMemoryRecorder
-import opentracing
+from opentracing_instrumentation.interceptors import (
+    Interceptors,
+    OpentracingInterceptor
+)
 
 
 class Handler(tornado.web.RequestHandler):
@@ -71,5 +85,35 @@ def test_http_fetch(base_url, http_client, tornado_http_patch, tracer):
         response = yield response  # cannot yield when in StackContext context
 
         span.finish()
+    assert response.code == 200
+    assert response.body.decode('utf-8') == trace_id
+
+
+@pytest.mark.gen_test(run_sync=False)
+def test_http_fetch_with_interceptor(base_url, http_client, tornado_http_patch, tracer):
+
+    mock_interceptor = Mock(spec=OpentracingInterceptor)
+    Interceptors.append(mock_interceptor)
+
+    @tornado.gen.coroutine
+    def make_downstream_call():
+        resp = yield http_client.fetch(base_url)
+        raise tornado.gen.Return(resp)
+
+    with patch('opentracing.tracer', tracer):
+        assert opentracing.tracer == tracer  # sanity check that patch worked
+
+        span = tracer.start_span('test')
+        trace_id = '{:x}'.format(span.context.trace_id)
+
+        with span_in_stack_context(span):
+            response = make_downstream_call()
+        response = yield response  # cannot yield when in StackContext context
+
+        mock_interceptor.process.assert_called_once()
+        assert mock_interceptor.process.call_args_list[0][1]['span'].tracer == tracer
+
+        span.finish()
+
     assert response.code == 200
     assert response.body.decode('utf-8') == trace_id
