@@ -38,7 +38,8 @@ class OpenTracingInterceptor(object):
 
     .. code-block:: python
 
-        from opentracing_instrumentation.interceptors import OpenTracingInterceptor
+        from opentracing_instrumentation.interceptors \
+            import OpenTracingInterceptor
 
         class CustomOpenTracingInterceptor(OpenTracingInterceptor):
 
