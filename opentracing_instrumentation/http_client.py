@@ -23,9 +23,12 @@ from builtins import object
 import re
 import opentracing
 import six
+
 from opentracing import Format
 from opentracing.ext import tags
+
 from opentracing_instrumentation.config import CONFIG
+from opentracing_instrumentation.interceptors import ClientInterceptors
 from opentracing_instrumentation import utils
 
 
@@ -59,6 +62,10 @@ def before_http_request(request, current_span_extractor):
     if port:
         span.set_tag(tags.PEER_PORT, port)
 
+    # fire interceptors
+    for interceptor in ClientInterceptors.get_interceptors():
+        interceptor.process(request=request, span=span)
+
     try:
         carrier = {}
         opentracing.tracer.inject(span_context=span.context,
@@ -73,6 +80,7 @@ def before_http_request(request, current_span_extractor):
 
 
 class AbstractRequestWrapper(object):
+
     def add_header(self, key, value):
         pass
 
