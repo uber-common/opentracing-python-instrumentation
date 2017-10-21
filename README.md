@@ -1,4 +1,4 @@
-[![PyPI version][pypi-img]][pypi] [![Build Status][ci-img]][ci]
+[![PyPI version][pypi-img]][pypi] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
 
 # opentracing-python-instrumentation
 
@@ -174,3 +174,5 @@ git push
 [ci]: https://travis-ci.org/uber-common/opentracing-python-instrumentation
 [pypi-img]: https://img.shields.io/pypi/v/opentracing_instrumentation.svg
 [pypi]: https://pypi.python.org/pypi/opentracing_instrumentation
+[cov-img]: https://coveralls.io/repos/github/uber-common/opentracing-python-instrumentation/badge.svg
+[cov]: https://coveralls.io/github/uber-common/opentracing-python-instrumentation
