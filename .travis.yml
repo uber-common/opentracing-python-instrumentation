@@ -7,13 +7,9 @@ matrix:
   - python: '2.7'
     env: COVER=1
   - python: '3.3'
-    env: COVER=0
   - python: '3.4'
-    env: COVER=0
   - python: '3.5'
-    env: COVER=0
   - python: '3.6'
-    env: COVER=0
 
 before_install:
   - bash travis/install-redis.sh
@@ -23,3 +19,7 @@ install:
 
 script:
   - make test lint
+
+after_success:
+  if [ "$COVER" = "1" ]; then coveralls -v ; fi
+

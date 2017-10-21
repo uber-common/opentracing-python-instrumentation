@@ -61,9 +61,7 @@ lint:
 test:
 	$(pytest) $(test_args)
 
-coverage:
-	coverage run --source $(project) setup.py test
-	coverage report -m
+coverage: test
 	coverage html
 	open htmlcov/index.html
 

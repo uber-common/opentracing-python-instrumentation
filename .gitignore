@@ -39,6 +39,7 @@ pip-log.txt
 .coverage*
 .tox
 .noseids
+htmlcov/
 
 # Translations
 *.mo
