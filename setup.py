@@ -33,6 +33,7 @@ setup(
     ],
     extras_require={
         'tests': [
+            'coveralls',
             'doubles',
             'flake8<3',  # see https://github.com/zheller/flake8-quotes/issues/29
             'flake8-quotes',
