@@ -88,9 +88,9 @@ def install_patches():
 
         @property
         def host_port(self):
-            host_string = self.request.get_host()
+            host_string = self.request.host
             return split_host_and_port(host_string=host_string,
-                                       scheme=self.request.get_type())
+                                       scheme=self.request.type)
 
     def install_for_module(module, do_open_base=None):
         httpBase = build_handler(module.HTTPHandler, do_open_base)
