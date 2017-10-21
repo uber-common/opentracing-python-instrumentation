@@ -37,7 +37,7 @@ setup(
             'flake8<3',  # see https://github.com/zheller/flake8-quotes/issues/29
             'flake8-quotes',
             'mock<1.1.0',
-            'pytest>=2.7',
+            'pytest>=3.0.0',
             'pytest-cov',
             'pytest-localserver',
             'pytest-mock',
