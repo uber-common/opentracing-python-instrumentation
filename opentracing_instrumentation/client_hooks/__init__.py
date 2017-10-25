@@ -72,7 +72,6 @@ def install_patches(patchers='all'):
         patch_func = _load_symbol(patch_func_name)
         logging.info('Applying client hook %s', patch_func_name)
         patch_func()
-    return
 
 
 def install_client_interceptors(client_interceptors=()):
