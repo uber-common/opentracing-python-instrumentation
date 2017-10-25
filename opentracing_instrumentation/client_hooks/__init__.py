@@ -64,14 +64,15 @@ def install_patches(patchers='all'):
     if patchers is None or patchers == 'all':
         install_all_patches()
         return
-    if _valid_args(patchers):
-        for patch_func_name in patchers:
-            logging.info('Loading client hook %s', patch_func_name)
-            patch_func = _load_symbol(patch_func_name)
-            logging.info('Applying client hook %s', patch_func_name)
-            patch_func()
-        return
-    raise ValueError('patchers argument must be None, "all", or a list')
+    if not _valid_args(patchers):
+        raise ValueError('patchers argument must be None, "all", or a list')
+
+    for patch_func_name in patchers:
+        logging.info('Loading client hook %s', patch_func_name)
+        patch_func = _load_symbol(patch_func_name)
+        logging.info('Applying client hook %s', patch_func_name)
+        patch_func()
+    return
 
 
 def install_client_interceptors(client_interceptors=()):
