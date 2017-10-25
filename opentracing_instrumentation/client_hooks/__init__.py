@@ -64,7 +64,7 @@ def install_patches(patchers='all'):
     if patchers is None or patchers == 'all':
         install_all_patches()
         return
-    if not _valid_args(patchers):
+    if _valid_args(patchers):
         for patch_func_name in patchers:
             logging.info('Loading client hook %s', patch_func_name)
             patch_func = _load_symbol(patch_func_name)
@@ -94,7 +94,8 @@ def install_client_interceptors(client_interceptors=()):
 
 
 def _valid_args(value):
-    return isinstance(value, Sequence) and not isinstance(value, six.string_types)
+    return isinstance(value, Sequence) and \
+        not isinstance(value, six.string_types)
 
 
 def _load_symbol(name):
