@@ -19,8 +19,12 @@
 # THE SOFTWARE.
 from __future__ import absolute_import
 
+from collections import Sequence
+
 import importlib
 import logging
+
+import six
 
 
 def install_all_patches():
@@ -60,7 +64,7 @@ def install_patches(patchers='all'):
     if patchers is None or patchers == 'all':
         install_all_patches()
         return
-    if type(patchers) is list:
+    if not _valid_args(patchers):
         for patch_func_name in patchers:
             logging.info('Loading client hook %s', patch_func_name)
             patch_func = _load_symbol(patch_func_name)
@@ -70,14 +74,14 @@ def install_patches(patchers='all'):
     raise ValueError('patchers argument must be None, "all", or a list')
 
 
-def install_client_interceptors(client_interceptors=None):
+def install_client_interceptors(client_interceptors=()):
     """
     Install client interceptors for the patchers.
 
     :param client_interceptors: a list of client interceptors to install.
         Should be a list of classes
     """
-    if not type(client_interceptors) is list:
+    if not _valid_args(client_interceptors):
         raise ValueError('client_interceptors argument must be a list')
 
     from ..http_client import ClientInterceptors
@@ -87,6 +91,10 @@ def install_client_interceptors(client_interceptors=None):
         interceptor_class = _load_symbol(client_interceptor)
         logging.info('Adding client interceptor %s', client_interceptor)
         ClientInterceptors.append(interceptor_class())
+
+
+def _valid_args(value):
+    return isinstance(value, Sequence) and not isinstance(value, six.string_types)
 
 
 def _load_symbol(name):
