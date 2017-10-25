@@ -3,11 +3,12 @@
 History
 -------
 
-2.2.1 (unreleased)
+2.3.0 (2017-10-25)
 ------------------
 
 - Futurize to support Python 3
 - Add interceptor support to ``opentracing_instrumentation.http_client``
+- Add function to install interceptors from list
 
 
 2.2.0 (2016-10-04)
