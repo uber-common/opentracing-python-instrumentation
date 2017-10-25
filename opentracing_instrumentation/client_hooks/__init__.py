@@ -70,6 +70,25 @@ def install_patches(patchers='all'):
     raise ValueError('patchers argument must be None, "all", or a list')
 
 
+def install_client_interceptors(client_interceptors=None):
+    """
+    Install client interceptors for the patchers.
+
+    :param client_interceptors: a list of client interceptors to install.
+        Should be a list of classes
+    """
+    if not type(client_interceptors) is list:
+        raise ValueError('client_interceptors argument must be a list')
+
+    from ..http_client import ClientInterceptors
+
+    for client_interceptor in client_interceptors:
+        logging.info('Loading client interceptor %s', client_interceptor)
+        interceptor_class = _load_symbol(client_interceptor)
+        logging.info('Adding client interceptor %s', client_interceptor)
+        ClientInterceptors.append(interceptor_class())
+
+
 def _load_symbol(name):
     """Load a symbol by name.
 
