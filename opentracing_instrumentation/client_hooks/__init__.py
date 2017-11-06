@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Uber Technologies, Inc.
+# Copyright (c) 2015-2017 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ def install_all_patches():
     If a specific module is not available on the path, it is ignored.
     """
     from . import mysqldb
+    from . import psycopg2
     from . import strict_redis
     from . import sqlalchemy
     from . import tornado_http
@@ -42,6 +43,7 @@ def install_all_patches():
     from . import requests
 
     mysqldb.install_patches()
+    psycopg2.install_patches()
     strict_redis.install_patches()
     sqlalchemy.install_patches()
     tornado_http.install_patches()

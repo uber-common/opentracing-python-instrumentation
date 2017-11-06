@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Uber Technologies, Inc.
+# Copyright (c) 2015-2017 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -115,6 +115,8 @@ class ConnectionFactory(object):
 
 
 class ConnectionWrapper(wrapt.ObjectProxy):
+    __slots__ = ('_module_name', '_connect_params')
+
     def __init__(self, connection, module_name, connect_params):
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
@@ -174,6 +176,8 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
 
 
 class CursorWrapper(wrapt.ObjectProxy):
+    __slots__ = ('_module_name', '_connect_params', '_cursor_params')
+
     def __init__(self, cursor, module_name,
                  connect_params=None, cursor_params=None):
         super(CursorWrapper, self).__init__(wrapped=cursor)

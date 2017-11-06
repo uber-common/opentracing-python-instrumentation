@@ -181,6 +181,9 @@ def span_in_context(span):
     ## Usage example in WSGI middleware:
 
     .. code-block:: python
+        from opentracing_instrumentation.http_server import WSGIRequestWrapper
+        from opentracing_instrumentation.http_server import before_request
+        from opentracing_instrumentation import request_context
 
         def create_wsgi_tracing_middleware(other_wsgi):
 
