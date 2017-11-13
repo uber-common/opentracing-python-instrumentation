@@ -24,7 +24,7 @@ setup(
     platforms='any',
     install_requires=[
         'future',
-        'futures',
+        'futures;python_version<"3"',
         'wrapt',
         'tornado>=4.1',
         'contextlib2',
