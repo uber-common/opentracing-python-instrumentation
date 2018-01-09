@@ -3,10 +3,10 @@
 History
 -------
 
-2.3.1 (unreleased)
+2.4.0 (2018-01-09)
 ------------------
 
-- Nothing changed yet.
+- Add client hooks for psycopg2 (#39)
 
   
 2.3.0 (2017-10-25)
