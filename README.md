@@ -5,6 +5,16 @@
 A collection of instrumentation tools to enable tracing with 
 [OpenTracing API](http://opentracing.io).
 
+## Module
+
+Make sure you are running recent enough versions of `pip` and `setuptools`, e.g. before installing your project requirements execute this:
+
+```
+pip install --upgrade "setuptools>=29" "pip>=9"
+```
+
+The module name is `opentracing_instrumentation`.
+
 ## What's inside
 
 ### Supported client frameworks
