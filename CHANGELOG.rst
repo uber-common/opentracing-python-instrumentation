@@ -3,10 +3,10 @@
 History
 -------
 
-2.4.1 (unreleased)
+2.4.1 (2018-04-19)
 ------------------
 
-- Nothing changed yet.
+- Remove dependency on 'futures' (#47)
 
 
 2.4.0 (2018-01-09)
