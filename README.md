@@ -56,6 +56,9 @@ common libraries like `SQLAlchemy`, `urllib2`, Tornado Async HTTP Client.
 The initialization of those hooks is usually also done from the middleware
 class's `__init__` method.
 
+There is a client-server example using this library with Flask instrumentation
+from opentracing-contrib: https://github.com/opentracing-contrib/python-flask/tree/master/example.
+
 Here's an example of a middleware for 
 [Clay framework](https://github.com/uber/clay):
 
