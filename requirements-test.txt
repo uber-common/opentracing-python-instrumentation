@@ -3,3 +3,5 @@
 -r requirements.txt
 
 -e .[tests]
+
+-e git+https://github.com/carlosalberto/opentracing-python.git@scope_managers_integration#egg=opentracing
