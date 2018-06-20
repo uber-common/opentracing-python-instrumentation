@@ -13,6 +13,7 @@ from opentracing.span import (
     Span,
     SpanContext
 )
+from opentracing.ext.scope_manager.tornado import TornadoScopeManager
 import tornado.gen
 import tornado.web
 import tornado.httpserver
@@ -61,7 +62,10 @@ def tornado_http_patch():
 
 @pytest.fixture
 def tracer():
-    t = BasicTracer(recorder=InMemoryRecorder())
+    t = BasicTracer(
+        recorder=InMemoryRecorder(),
+        scope_manager=TornadoScopeManager(),
+    )
     t.register_required_propagators()
     return t
 

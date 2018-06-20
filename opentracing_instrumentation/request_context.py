@@ -23,6 +23,7 @@ from builtins import object
 import threading
 
 import opentracing
+from opentracing.ext.scope_manager.tornado import TornadoScopeManager
 from opentracing.ext.scope_manager.tornado import tracer_stack_context
 
 
@@ -193,6 +194,9 @@ def span_in_stack_context(span):
     :return:
         Return StackContext that wraps the request context.
     """
+
+    if not isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
+        raise RuntimeError('scope_manager is not TornadoScopeManager')
 
     # Enter the newly created stack context so we have
     # storage available for Span activation.
