@@ -23,11 +23,7 @@ from builtins import object
 import threading
 
 import opentracing
-from opentracing.ext.scope_manager.tornado import TornadoScopeManager
 from opentracing.ext.scope_manager.tornado import tracer_stack_context
-
-
-scope_manager = TornadoScopeManager()
 
 
 class RequestContext(object):
@@ -118,7 +114,7 @@ def get_current_span():
         has no span, return None.
     """
 
-    active = scope_manager.active
+    active = opentracing.tracer.scope_manager.active
     return active.span if active else None
 
 
@@ -160,7 +156,12 @@ def span_in_context(span):
     :return:
         Return context manager that wraps the request context.
     """
-    return scope_manager.activate(span, False)
+
+    # Return a no-op Scope if None was specified.
+    if span is None:
+        return opentracing.Scope(None, None)
+
+    return opentracing.tracer.scope_manager.activate(span, False)
 
 
 def span_in_stack_context(span):
@@ -198,6 +199,11 @@ def span_in_stack_context(span):
     context = tracer_stack_context()
     entered_context = TracerEnteredStackContext(context)
 
-    scope_manager.activate(span, False)
+    if span is None:
+        return entered_context
+
+    opentracing.tracer.scope_manager.activate(span, False)
+    assert opentracing.tracer.active_span is not None
+    assert opentracing.tracer.active_span is span
 
     return entered_context

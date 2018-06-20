@@ -27,6 +27,7 @@ import mock
 import pytest
 from tornado.httputil import HTTPHeaders
 import opentracing
+from opentracing.ext.scope_manager import ThreadLocalScopeManager
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
@@ -37,6 +38,8 @@ import urllib.request
 import six
 if six.PY2:
     import urllib2
+
+patch = mock.patch
 
 
 @pytest.yield_fixture
@@ -68,7 +71,10 @@ def install_hooks(request):
 
 @pytest.yield_fixture
 def tracer():
-    t = BasicTracer(recorder=InMemoryRecorder())
+    t = BasicTracer(
+        recorder=InMemoryRecorder(),
+        scope_manager=ThreadLocalScopeManager(),
+    )
     t.register_required_propagators()
     old_tracer = opentracing.tracer
     opentracing.tracer = t
