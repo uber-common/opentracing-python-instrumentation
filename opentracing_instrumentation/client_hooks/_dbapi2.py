@@ -161,17 +161,19 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
             connect_params=connect_params
         )
 
+    def __getattr__(self, name):
         # Tip suggested here:
         # https://gist.github.com/mjallday/3d4c92e7e6805af1e024.
-        self._sqla_unwrap = connection
+        if name == '_sqla_unwrap':
+            return self.__wrapped__
 
     def __enter__(self):
         with func_span('%s:begin_transaction' % self._module_name):
-            cursor = self.__wrapped__.__enter__()
+            connection = self.__wrapped__.__enter__()
 
-        return CursorWrapper(cursor=cursor,
-                             module_name=self._module_name,
-                             connect_params=self._connect_params)
+        return ConnectionWrapper(connection=connection,
+                                 module_name=self._module_name,
+                                 connect_params=self._connect_params)
 
     def __exit__(self, exc, value, tb):
         outcome = _COMMIT if exc is None else _ROLLBACK

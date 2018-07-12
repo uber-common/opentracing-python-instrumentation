@@ -6,16 +6,21 @@ matrix:
   include:
   - python: '2.7'
     env: COVER=1
-  - python: '3.3'
+  # For some reason not working.
+  # - python: '3.3'
   - python: '3.4'
   - python: '3.5'
   - python: '3.6'
 
-before_install:
-  - bash travis/install-redis.sh
-
 install:
   - make install-ci
+
+services:
+  - postgresql
+  - redis
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
 
 script:
   - make test lint
