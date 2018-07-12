@@ -109,4 +109,4 @@ def test_db(tracer, engine, session):
     user2 = User(name='user2', fullname='User 2', password='password')
     session.add(user1)
     session.add(user2)
-    raise Exception([span.__dict__ for span in tracer.recorder.get_spans()])
+    # If the test does not raised an error, it is passing
