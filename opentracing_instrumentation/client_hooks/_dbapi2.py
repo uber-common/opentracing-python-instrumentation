@@ -161,6 +161,9 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
             connect_params=connect_params
         )
 
+        # Tip suggested here: https://gist.github.com/mjallday/3d4c92e7e6805af1e024.
+        self._sqla_unwrap = connection
+
     def __enter__(self):
         with func_span('%s:begin_transaction' % self._module_name):
             cursor = self.__wrapped__.__enter__()
