@@ -83,12 +83,6 @@ def tracer():
         opentracing.tracer = old_tracer
 
 
-def check_span():
-    print([span.__dict__ for span in opentracing.tracer.recorder.get_spans()])
-    print(span.tags)
-    assert span.tags[tags.SPAN_KIND] == tags.SPAN_KIND_RPC_CLIENT
-
-
 metadata = MetaData()
 user = Table('user', metadata,
              Column('id', Integer, primary_key=True),
