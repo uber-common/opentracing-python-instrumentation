@@ -21,6 +21,8 @@
 from builtins import object
 import random
 
+import psycopg2 as psycopg2_client
+
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 import opentracing
@@ -43,10 +45,13 @@ from sqlalchemy.orm import mapper, sessionmaker
 import pytest
 
 
+POSTGRES_CONNECTION_STRING = 'postgresql://localhost/travis_ci_test'
+
+
 @pytest.fixture
 def engine():
     try:
-        yield create_engine('postgresql://localhost/travis_ci_test')
+        yield create_engine(POSTGRES_CONNECTION_STRING)
     except:
         pass
 
@@ -85,7 +90,6 @@ def check_span():
 
 
 metadata = MetaData()
-
 user = Table('user', metadata,
              Column('id', Integer, primary_key=True),
              Column('name', String(50)),
@@ -103,6 +107,17 @@ class User(object):
 
 mapper(User, user)
 
+
+def is_postgres_running():
+    try:
+        with psycopg2_client.connect(POSTGRES_CONNECTION_STRING) as conn:
+            pass
+        return True
+    except:
+        return False
+
+
+@pytest.mark.skipif(not is_postgres_running(), reason='Postgres is not running or cannot connect')
 def test_db(tracer, engine, session):
     metadata.create_all(engine)
     user1 = User(name='user1', fullname='User 1', password='password')

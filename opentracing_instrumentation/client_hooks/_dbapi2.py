@@ -169,11 +169,11 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
 
     def __enter__(self):
         with func_span('%s:begin_transaction' % self._module_name):
-            connection = self.__wrapped__.__enter__()
+            cursor = self.__wrapped__.__enter__()
 
-        return ConnectionWrapper(connection=connection,
-                                 module_name=self._module_name,
-                                 connect_params=self._connect_params)
+        return CursorWrapper(cursor=cursor,
+                             module_name=self._module_name,
+                             connect_params=self._connect_params)
 
     def __exit__(self, exc, value, tb):
         outcome = _COMMIT if exc is None else _ROLLBACK
