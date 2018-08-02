@@ -93,6 +93,14 @@ def check_span(span, key):
     assert span.tags[tags.PEER_SERVICE] == 'redis'
 
 
+def is_redis_running():
+    try:
+        return client().ping()
+    except:
+        return False
+
+
+@pytest.mark.skipif(not is_redis_running(), reason='Redis is not running')
 def test_get(monkeypatch, client, key):
     span, start_span = spans(monkeypatch)
     client.get(key)
@@ -101,6 +109,7 @@ def test_get(monkeypatch, client, key):
     client.get(name=key)
 
 
+@pytest.mark.skipif(not is_redis_running(), reason='Redis is not running')
 def test_set(monkeypatch, client, key):
     span, start_span = spans(monkeypatch)
     client.set(key, VAL)
@@ -111,6 +120,7 @@ def test_set(monkeypatch, client, key):
     client.set(key, VAL, 1)
 
 
+@pytest.mark.skipif(not is_redis_running(), reason='Redis is not running')
 def test_setex(monkeypatch, client, key):
     span, start_span = spans(monkeypatch)
     client.setex(key, 60, VAL)
@@ -120,6 +130,7 @@ def test_setex(monkeypatch, client, key):
     client.setex(name=key, time=60, value=VAL)
 
 
+@pytest.mark.skipif(not is_redis_running(), reason='Redis is not running')
 def test_setnx(monkeypatch, client, key):
     span, start_span = spans(monkeypatch)
     client.setnx(key, VAL)
@@ -129,6 +140,7 @@ def test_setnx(monkeypatch, client, key):
     client.setnx(name=key, value=VAL)
 
 
+@pytest.mark.skipif(not is_redis_running(), reason='Redis is not running')
 def test_key_is_cleared(monkeypatch, client, key):
     # first do a GET that sets the key
     span, start_span = spans(monkeypatch)

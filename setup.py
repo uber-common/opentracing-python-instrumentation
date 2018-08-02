@@ -41,6 +41,8 @@ setup(
             'flake8<3',  # see https://github.com/zheller/flake8-quotes/issues/29
             'flake8-quotes',
             'mock<1.1.0',
+            'psycopg2>=2.4.0',
+            'sqlalchemy>=1.2.0',
             'pytest>=3.0.0',
             'pytest-cov',
             'pytest-localserver',
