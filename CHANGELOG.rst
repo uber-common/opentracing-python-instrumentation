@@ -3,10 +3,10 @@
 History
 -------
 
-2.4.2 (unreleased)
+2.4.2 (2018-08-02)
 ------------------
 
-- Nothing changed yet.
+- Fix wrapper for psycopg2 connection so type check does not fail (#55)
 
 
 2.4.1 (2018-04-19)
@@ -20,7 +20,7 @@ History
 
 - Add client hooks for psycopg2 (#39)
 
-  
+
 2.3.0 (2017-10-25)
 ------------------
 
