@@ -30,7 +30,9 @@ check-virtualenv:
 bootstrap: check-virtualenv install-deps
 
 install-deps:
-	pip install 'setuptools>=20.8.1'
+	# We need to limit to <40.0.0 as long as we support Python 3.3.
+	# See https://github.com/pypa/setuptools/commit/7392f01ffced3acfdef25b0b2d55cefdc6ee468a.
+	pip install 'setuptools>=20.8.1,<40.0.0'
 	pip install -r requirements.txt
 	pip install -r requirements-test.txt
 	python setup.py develop

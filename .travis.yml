@@ -6,8 +6,7 @@ matrix:
   include:
   - python: '2.7'
     env: COVER=1
-  # For some reason not working.
-  # - python: '3.3'
+  - python: '3.3'
   - python: '3.4'
   - python: '3.5'
   - python: '3.6'
