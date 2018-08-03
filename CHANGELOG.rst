@@ -3,7 +3,7 @@
 History
 -------
 
-2.4.2 (2018-08-02)
+2.4.2 (2018-08-03)
 ------------------
 
 - Fix wrapper for psycopg2 connection so type check does not fail (#55)
