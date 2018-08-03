@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
 
 setup(
     name='opentracing_instrumentation',
@@ -7,6 +9,8 @@ setup(
     author='Yuri Shkuro',
     author_email='ys@uber.com',
     description='Tracing Instrumentation using OpenTracing API (http://opentracing.io)',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     license='MIT',
     url='https://github.com/uber-common/opentracing-python-instrumentation',
     keywords=['opentracing'],
