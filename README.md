@@ -24,6 +24,7 @@ The following libraries are instrumented for tracing in this module:
  * `requests`
  * `SQLAlchemy`
  * `MySQLdb`
+ * `psycopg2`
  * Tornado HTTP client
  *  `redis`
 
@@ -59,8 +60,7 @@ class's `__init__` method.
 There is a client-server example using this library with Flask instrumentation
 from opentracing-contrib: https://github.com/opentracing-contrib/python-flask/tree/master/example.
 
-Here's an example of a middleware for 
-[Clay framework](https://github.com/uber/clay):
+Here's an example of a middleware for [Clay framework](https://github.com/uber/clay):
 
 ```python
 
@@ -167,20 +167,6 @@ virtualenv env
 source env/bin/activate
 make bootstrap
 make test
-```
-
-## Releases
-
-Before new release, add a summary of changes since last version to CHANGELOG.rst
-
-```
-pip install zest.releaser[recommended]
-prerelease
-release
-git push origin master --follow-tags
-python setup.py sdist upload -r pypi
-postrelease
-git push
 ```
 
 [ci-img]: https://travis-ci.org/uber-common/opentracing-python-instrumentation.svg?branch=master
