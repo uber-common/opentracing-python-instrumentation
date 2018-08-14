@@ -166,6 +166,7 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
         # https://gist.github.com/mjallday/3d4c92e7e6805af1e024.
         if name == '_sqla_unwrap':
             return self.__wrapped__
+        return super(ContextManagerConnectionWrapper, self).__getattr__(name)
 
     def __enter__(self):
         with func_span('%s:begin_transaction' % self._module_name):
