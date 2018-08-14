@@ -32,7 +32,7 @@ bootstrap: check-virtualenv install-deps
 install-deps:
 	# We need to limit to <40.0.0 as long as we support Python 3.3.
 	# See https://github.com/pypa/setuptools/commit/7392f01ffced3acfdef25b0b2d55cefdc6ee468a.
-	if [[ "$$(python --version 2>&1 | sed 's/\.\d\+$$//g')" = "Python 3.3" ]]; then \
+	if [ "$$(python --version 2>&1 | sed 's/\.\d\+$$//g')" = "Python 3.3" ]; then \
 		pip install 'setuptools>=20.8.1,<40.0.0'; \
 	else \
 		pip install 'setuptools>=20.8.1'; \
