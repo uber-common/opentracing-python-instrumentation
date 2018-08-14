@@ -121,6 +121,6 @@ def test_db(tracer, engine, session):
     # If the test does not raised an error, it is passing
 
 @pytest.mark.skipif(not is_postgres_running(), reason='Postgres is not running or cannot connect')
-def test_connection_proxy(tracer, engine, session):
+def test_connection_proxy(tracer, engine):
     # Test that connection properties are proxied by ContextManagerConnectionWrapper
     assert engine.raw_connection().connection.closed == 0
