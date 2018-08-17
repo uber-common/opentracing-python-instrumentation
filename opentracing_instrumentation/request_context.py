@@ -23,8 +23,8 @@ from builtins import object
 import threading
 
 import opentracing
-from opentracing.ext.scope_manager.tornado import TornadoScopeManager
-from opentracing.ext.scope_manager.tornado import tracer_stack_context
+from opentracing.scope_managers.tornado import TornadoScopeManager
+from opentracing.scope_managers.tornado import tracer_stack_context
 
 
 class RequestContext(object):
