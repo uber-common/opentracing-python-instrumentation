@@ -3,10 +3,11 @@
 History
 -------
 
-2.4.3 (unreleased)
+2.4.3 (2018-08-24)
 ------------------
 
-- Nothing changed yet.
+- Fix Makefile to check Python version to determine setuptools version (#62)
+- Fix gettattr for ContextManagerConnectionWrapper (#63)
 
 
 2.4.2 (2018-08-03)
