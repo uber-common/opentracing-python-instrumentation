@@ -43,8 +43,38 @@ else:
     _HTTPAdapter_send = requests.adapters.HTTPAdapter.send
 
 
+class DefaultRequestWrapper(AbstractRequestWrapper):
+    def __init__(self, request):
+        self.request = request
+        self.scheme, rest = urllib.parse.splittype(request.url)
+        if self.scheme and rest:
+            self.host_str, _ = urllib.parse.splithost(rest)
+        else:
+            self.host_str = ''
+
+    def add_header(self, key, value):
+        self.request.headers[key] = value
+
+    @property
+    def method(self):
+        return self.request.method
+
+    @property
+    def full_url(self):
+        return self.request.url
+
+    @property
+    def _headers(self):
+        return self.request.headers
+
+    @property
+    def host_port(self):
+        return split_host_and_port(host_string=self.host_str,
+                                   scheme=self.scheme)
+
+
 @singleton
-def install_patches():
+def install_patches(RequestWrapper=DefaultRequestWrapper):
     try:
         import requests.sessions
         import requests.adapters
@@ -63,34 +93,5 @@ def install_patches():
             if hasattr(resp, 'status_code') and resp.status_code is not None:
                 span.set_tag('http.status_code', resp.status_code)
         return resp
-
-    class RequestWrapper(AbstractRequestWrapper):
-        def __init__(self, request):
-            self.request = request
-            self.scheme, rest = urllib.parse.splittype(request.url)
-            if self.scheme and rest:
-                self.host_str, _ = urllib.parse.splithost(rest)
-            else:
-                self.host_str = ''
-
-        def add_header(self, key, value):
-            self.request.headers[key] = value
-
-        @property
-        def method(self):
-            return self.request.method
-
-        @property
-        def full_url(self):
-            return self.request.url
-
-        @property
-        def _headers(self):
-            return self.request.headers
-
-        @property
-        def host_port(self):
-            return split_host_and_port(host_string=self.host_str,
-                                       scheme=self.scheme)
 
     requests.adapters.HTTPAdapter.send = send_wrapper
