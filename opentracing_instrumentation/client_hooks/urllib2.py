@@ -36,8 +36,37 @@ from ._singleton import singleton
 log = logging.getLogger(__name__)
 
 
+class Urllib2RequestWrapper(AbstractRequestWrapper):
+    def __init__(self, request):
+        self.request = request
+        self._norm_headers = None
+
+    def add_header(self, key, value):
+        self.request.add_header(key, value)
+
+    @property
+    def method(self):
+        return self.request.get_method()
+
+    @property
+    def full_url(self):
+        return self.request.get_full_url()
+
+    @property
+    def _headers(self):
+        if self._norm_headers is None:
+            self._norm_headers = HTTPHeaders(self.request.headers)
+        return self._norm_headers
+
+    @property
+    def host_port(self):
+        host_string = self.request.host
+        return split_host_and_port(host_string=host_string,
+                                   scheme=self.request.type)
+
+
 @singleton
-def install_patches():
+def install_patches(RequestWrapper=Urllib2RequestWrapper):
     import http.client
     import urllib.request
 
@@ -48,7 +77,7 @@ def install_patches():
             """The class derived from base_type."""
 
             def do_open(self, req, conn):
-                request_wrapper = Urllib2RequestWrapper(request=req)
+                request_wrapper = RequestWrapper(request=req)
                 span = before_http_request(
                     request=request_wrapper,
                     current_span_extractor=get_current_span)
@@ -63,34 +92,6 @@ def install_patches():
                 return resp
 
         return DerivedHandler
-
-    class Urllib2RequestWrapper(AbstractRequestWrapper):
-        def __init__(self, request):
-            self.request = request
-            self._norm_headers = None
-
-        def add_header(self, key, value):
-            self.request.add_header(key, value)
-
-        @property
-        def method(self):
-            return self.request.get_method()
-
-        @property
-        def full_url(self):
-            return self.request.get_full_url()
-
-        @property
-        def _headers(self):
-            if self._norm_headers is None:
-                self._norm_headers = HTTPHeaders(self.request.headers)
-            return self._norm_headers
-
-        @property
-        def host_port(self):
-            host_string = self.request.host
-            return split_host_and_port(host_string=host_string,
-                                       scheme=self.request.type)
 
     def install_for_module(module, do_open_base=None):
         httpBase = build_handler(module.HTTPHandler, do_open_base)
