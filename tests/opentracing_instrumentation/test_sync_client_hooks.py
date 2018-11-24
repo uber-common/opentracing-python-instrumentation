@@ -118,7 +118,7 @@ def test_urllib2(urllibver, scheme, root_span, install_hooks, tracer):
         )
     else:
         cls = module.AbstractHTTPHandler
-        p_do_open = mock._patch_object(
+        p_do_open = mock.patch.object(
             cls, 'do_open', return_value=Response()
         )
 
