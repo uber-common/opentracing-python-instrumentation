@@ -25,7 +25,6 @@ from opentracing_instrumentation.http_server import TornadoRequestWrapper
 import tornado.httputil
 import opentracing
 from opentracing import Format
-from opentracing.ext import tags
 from opentracing_instrumentation import http_server
 from opentracing_instrumentation import config
 
