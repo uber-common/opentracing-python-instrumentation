@@ -3,10 +3,13 @@
 History
 -------
 
-2.4.4 (unreleased)
+2.5.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add support for Python 3.7
+- Drop support of Python 3.3
+- Update the requirements
+- Fix flake8 warnings
 
 
 2.4.3 (2018-08-24)
