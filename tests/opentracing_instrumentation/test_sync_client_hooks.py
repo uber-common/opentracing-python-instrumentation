@@ -27,7 +27,7 @@ import mock
 import pytest
 from tornado.httputil import HTTPHeaders
 import opentracing
-from opentracing.ext.scope_manager import ThreadLocalScopeManager
+from opentracing.scope_managers import ThreadLocalScopeManager
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
 from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks

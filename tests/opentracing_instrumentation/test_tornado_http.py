@@ -13,7 +13,7 @@ from opentracing.span import (
     Span,
     SpanContext
 )
-from opentracing.ext.scope_manager.tornado import TornadoScopeManager
+from opentracing.scope_managers.tornado import TornadoScopeManager
 import tornado.gen
 import tornado.web
 import tornado.httpserver

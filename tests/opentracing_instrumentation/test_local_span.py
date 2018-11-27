@@ -22,7 +22,7 @@ from __future__ import absolute_import
 from mock import patch
 
 import opentracing
-from opentracing.ext.scope_manager import ThreadLocalScopeManager
+from opentracing.scope_managers import ThreadLocalScopeManager
 from opentracing_instrumentation.local_span import func_span
 from opentracing_instrumentation.client_hooks._dbapi2 import db_span, _COMMIT
 from opentracing_instrumentation.client_hooks._singleton import singleton

@@ -21,7 +21,7 @@
 from __future__ import absolute_import
 
 import opentracing
-from opentracing.ext.scope_manager.tornado import TornadoScopeManager
+from opentracing.scope_managers.tornado import TornadoScopeManager
 from opentracing_instrumentation.request_context import (
     get_current_span,
     span_in_stack_context,

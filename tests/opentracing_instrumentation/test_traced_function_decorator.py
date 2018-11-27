@@ -22,7 +22,7 @@ from __future__ import absolute_import
 from builtins import object
 import mock
 import opentracing
-from opentracing.ext.scope_manager.tornado import TornadoScopeManager
+from opentracing.scope_managers.tornado import TornadoScopeManager
 
 import tornado.stack_context
 import tornado.concurrent
