@@ -3,10 +3,26 @@
 History
 -------
 
-2.4.2 (unreleased)
+2.5.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add support for Python 3.7
+- Drop support of Python 3.3
+- Update the requirements
+- Fix flake8 warnings
+
+
+2.4.3 (2018-08-24)
+------------------
+
+- Fix Makefile to check Python version to determine setuptools version (#62)
+- Fix gettattr for ContextManagerConnectionWrapper (#63)
+
+
+2.4.2 (2018-08-03)
+------------------
+
+- Fix wrapper for psycopg2 connection so type check does not fail (#55)
 
 
 2.4.1 (2018-04-19)
@@ -20,7 +36,7 @@ History
 
 - Add client hooks for psycopg2 (#39)
 
-  
+
 2.3.0 (2017-10-25)
 ------------------
 

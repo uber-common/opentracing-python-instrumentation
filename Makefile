@@ -30,9 +30,8 @@ check-virtualenv:
 bootstrap: check-virtualenv install-deps
 
 install-deps:
-	pip install 'setuptools>=20.8.1'
-	pip install -r requirements.txt
-	pip install -r requirements-test.txt
+	pip install -U pip setuptools wheel
+	pip install -U --upgrade-strategy eager -r requirements-test.txt
 	python setup.py develop
 
 install-ci: install-deps

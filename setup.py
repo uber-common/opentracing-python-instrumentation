@@ -1,12 +1,17 @@
 from setuptools import setup, find_packages
 
+with open('README.md', 'r') as fh:
+    long_description = fh.read()
 
 setup(
     name='opentracing_instrumentation',
-    version='2.4.2.dev0',
+    version='2.5.0.dev0',
     author='Yuri Shkuro',
     author_email='ys@uber.com',
-    description='Tracing Instrumentation using OpenTracing API (http://opentracing.io)',
+    description='Tracing Instrumentation using OpenTracing API '
+                '(http://opentracing.io)',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     license='MIT',
     url='https://github.com/uber-common/opentracing-python-instrumentation',
     keywords=['opentracing'],
@@ -15,10 +20,10 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
@@ -38,10 +43,16 @@ setup(
         'tests': [
             'coveralls',
             'doubles',
-            'flake8<3',  # see https://github.com/zheller/flake8-quotes/issues/29
+            'flake8',
             'flake8-quotes',
-            'mock<1.1.0',
-            'pytest>=3.0.0',
+            'mock',
+            'psycopg2-binary',
+            'sqlalchemy>=1.2.0',
+
+            # pytest-tornado isn't compatible with pytest>=4.0.0,
+            # see https://github.com/eugeniy/pytest-tornado/pull/38
+            'pytest>=3.0.0,<4.0.0',
+
             'pytest-cov',
             'pytest-localserver',
             'pytest-mock',

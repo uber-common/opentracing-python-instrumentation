@@ -1,4 +1,5 @@
-sudo: required
+dist: xenial
+sudo: true
 
 language: python
 
@@ -6,20 +7,24 @@ matrix:
   include:
   - python: '2.7'
     env: COVER=1
-  - python: '3.3'
   - python: '3.4'
+    dist: trusty
   - python: '3.5'
   - python: '3.6'
-
-before_install:
-  - bash travis/install-redis.sh
+  - python: '3.7'
 
 install:
   - make install-ci
+
+services:
+  - postgresql
+  - redis
+
+before_script:
+  - psql -c 'create database travis_ci_test;' -U postgres
 
 script:
   - make test lint
 
 after_success:
   if [ "$COVER" = "1" ]; then coveralls -v ; fi
-
