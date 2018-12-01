@@ -10,6 +10,13 @@ History
 - Drop support of Python 3.3
 - Update the requirements
 - Fix flake8 warnings
+- Add tox.ini
+- Update setup.cfg
+- Enable branch coverage measurement
+- Update the README
+- Unify tracer fixture and move it to conftest.py
+- Fix some deprecation warnings
+- Clean up imports
 
 
 2.4.3 (2018-08-24)

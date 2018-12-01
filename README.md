@@ -162,11 +162,17 @@ def run_coroutine_with_span(span, func, *args, **kwargs):
 
 ## Development
 
-```
+To prepare a development environment please execute the following commands.
+```bash
 virtualenv env
 source env/bin/activate
 make bootstrap
 make test
+```
+
+You can use [tox](https://tox.readthedocs.io) to run tests as well.
+```bash
+tox
 ```
 
 [ci-img]: https://travis-ci.org/uber-common/opentracing-python-instrumentation.svg?branch=master

@@ -19,7 +19,11 @@
 # THE SOFTWARE.
 from __future__ import absolute_import
 
-from collections import Sequence
+import six
+if six.PY2:
+    from collections import Sequence
+else:
+    from collections.abc import Sequence
 
 import importlib
 import logging

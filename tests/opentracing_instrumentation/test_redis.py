@@ -95,7 +95,7 @@ def check_span(span, key):
 
 def is_redis_running():
     try:
-        return client().ping()
+        return redis.StrictRedis().ping()
     except:
         return False
 

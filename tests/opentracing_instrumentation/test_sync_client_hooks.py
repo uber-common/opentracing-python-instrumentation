@@ -25,21 +25,15 @@ standard_library.install_aliases()
 
 import mock
 import pytest
-from tornado.httputil import HTTPHeaders
-import opentracing
-from opentracing.scope_managers import ThreadLocalScopeManager
-from basictracer import BasicTracer
-from basictracer.recorder import InMemoryRecorder
-from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
-from opentracing_instrumentation.config import CONFIG
-from opentracing_instrumentation.request_context import span_in_context
-
-import urllib.request
 import six
 if six.PY2:
     import urllib2
+import urllib.request
+from tornado.httputil import HTTPHeaders
 
-patch = mock.patch
+from opentracing_instrumentation.client_hooks import urllib2 as urllib2_hooks
+from opentracing_instrumentation.config import CONFIG
+from opentracing_instrumentation.request_context import span_in_context
 
 
 @pytest.yield_fixture
@@ -67,22 +61,6 @@ def install_hooks(request):
     module.install_opener(old_opener)
     CONFIG.callee_name_headers = old_callee_headers
     CONFIG.callee_endpoint_headers = old_endpoint_headers
-
-
-@pytest.yield_fixture
-def tracer():
-    t = BasicTracer(
-        recorder=InMemoryRecorder(),
-        scope_manager=ThreadLocalScopeManager(),
-    )
-    t.register_required_propagators()
-    old_tracer = opentracing.tracer
-    opentracing.tracer = t
-
-    try:
-        yield t
-    except:
-        opentracing.tracer = old_tracer
 
 
 @pytest.mark.parametrize('urllibver,scheme,root_span', [
