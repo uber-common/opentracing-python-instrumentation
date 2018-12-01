@@ -6,6 +6,7 @@ History
 2.5.0 (unreleased)
 ------------------
 
+- Adopt the OpenTracing 2.0 API.
 - Add support for Python 3.7
 - Drop support of Python 3.3
 - Update the requirements
