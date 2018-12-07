@@ -93,7 +93,7 @@ class RequestContextManager(object):
         return False
 
 
-class TracerEnteredStackContext(object):
+class _TracerEnteredStackContext(object):
     """
     An entered tracer_stack_context() object.
 
@@ -213,7 +213,7 @@ def span_in_stack_context(span):
     # Enter the newly created stack context so we have
     # storage available for Span activation.
     context = tracer_stack_context()
-    entered_context = TracerEnteredStackContext(context)
+    entered_context = _TracerEnteredStackContext(context)
 
     if span is None:
         return entered_context
