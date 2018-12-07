@@ -29,6 +29,9 @@ from opentracing.scope_managers.tornado import tracer_stack_context
 
 class RequestContext(object):
     """
+    DEPRECATED, use either span_in_context() or span_in_stack_context()
+    instead.
+
     RequestContext represents the context of a request being executed.
 
     Useful when a service needs to make downstream calls to other services
@@ -46,7 +49,11 @@ class RequestContext(object):
 
 
 class RequestContextManager(object):
-    """A context manager that saves RequestContext in thread-local state.
+    """
+    DEPRECATED, use either span_in_context() or span_in_stack_context()
+    instead.
+
+    A context manager that saves RequestContext in thread-local state.
 
     Intended for use with ThreadSafeStackContext (a thread-safe
     replacement for Tornado's StackContext) or as context manager
