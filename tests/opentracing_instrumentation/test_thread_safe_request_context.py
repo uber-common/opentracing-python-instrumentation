@@ -42,7 +42,7 @@ def test__request_context_is_thread_safe():
 
         def run(self):
             try:
-                for _ in xrange(0, num_iterations):
+                for _ in range(0, num_iterations):
                     self.fn()
             except Exception as e:
                 exception[0] = e
@@ -50,7 +50,7 @@ def test__request_context_is_thread_safe():
 
     with span_in_stack_context(span='span'):
         workers = []
-        for i in xrange(0, num_workers):
+        for i in range(0, num_workers):
             worker = Worker(wrap(async_task))
             workers.append(worker)
 
