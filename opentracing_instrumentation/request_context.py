@@ -89,7 +89,7 @@ class ThreadSafeStackContext(tornado.stack_context.StackContext):
     """
     Thread safe version of Tornado's StackContext (up to 4.3)
 
-    Copy of implementation by caspersj@, until tornado-extras is open-sourced.
+    Port of Uber's internal tornado-extras (by @sema).
 
     Tornado's StackContext works as follows:
     - When entering a context, create an instance of StackContext and
