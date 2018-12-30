@@ -116,3 +116,4 @@ def reset_patches():
     for name in METHOD_NAMES:
         setattr(redis.StrictRedis, name, ORIG_METHODS[name])
     ORIG_METHODS.clear()
+    install_patches.reset()

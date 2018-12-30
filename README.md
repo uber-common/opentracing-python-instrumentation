@@ -160,6 +160,27 @@ def run_coroutine_with_span(span, func, *args, **kwargs):
         return func(*args, **kwargs)
 ```
 
+### Customization
+
+For the `requests` library, in case you want to set custom tags
+to spans depending on content or some metadata of responses,
+you can set `response_handler_hook`.
+The hook must be a method with a signature `(response, span)`,
+where `response` and `span` are positional arguments,
+so you can use different names for them if needed.
+
+```python
+from opentracing_instrumentation.client_hooks.requests import patcher
+
+
+def hook(response, span):
+    if not response.ok:
+        span.set_tag('error', 'true')
+
+
+patcher.set_response_handler_hook(hook)
+```
+
 ## Development
 
 To prepare a development environment please execute the following commands.

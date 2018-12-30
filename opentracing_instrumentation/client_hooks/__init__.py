@@ -28,8 +28,6 @@ else:
 import importlib
 import logging
 
-import six
-
 
 def install_all_patches():
     """
