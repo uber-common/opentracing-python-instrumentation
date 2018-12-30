@@ -25,17 +25,17 @@ standard_library.install_aliases()
 import logging
 import urllib.parse
 
+from opentracing.ext import tags
 from ..request_context import get_current_span
 from ..http_client import AbstractRequestWrapper
 from ..http_client import before_http_request
 from ..http_client import split_host_and_port
-from ._singleton import singleton
+from ._patcher import Patcher
 
 log = logging.getLogger(__name__)
 
 # Try to save the original entry points
 try:
-    import requests.sessions
     import requests.adapters
 except ImportError:  # pragma: no cover
     pass
@@ -43,26 +43,47 @@ else:
     _HTTPAdapter_send = requests.adapters.HTTPAdapter.send
 
 
-@singleton
-def install_patches():
-    try:
-        import requests.sessions
-        import requests.adapters
-    except ImportError:  # pragma: no cover
-        return
+class RequestsPatcher(Patcher):
 
-    def send_wrapper(self, request, **kwargs):
-        """Wraps HTTPAdapter.send"""
+    applicable = '_HTTPAdapter_send' in globals()
+    response_handler_hook = None
 
-        request_wrapper = RequestWrapper(request=request)
-        span = before_http_request(
-            request=request_wrapper,
-            current_span_extractor=get_current_span)
-        with span:
-            resp = _HTTPAdapter_send(self, request, **kwargs)
-            if hasattr(resp, 'status_code') and resp.status_code is not None:
-                span.set_tag('http.status_code', resp.status_code)
-        return resp
+    def set_response_handler_hook(self, response_handler_hook):
+        """
+        Set a hook that will be called when a response is received.
+
+        The hook can be set in purpose to set custom tags to spans
+        depending on content or some metadata of responses.
+
+        :param response_handler_hook: hook method
+            It must have a signature `(response, span)`,
+            where `response` and `span` are positional arguments,
+            so you can use different names for them if needed.
+        """
+
+        self.response_handler_hook = response_handler_hook
+
+    def _install_patches(self):
+        requests.adapters.HTTPAdapter.send = self._get_send_wrapper()
+
+    def _reset_patches(self):
+        requests.adapters.HTTPAdapter.send = _HTTPAdapter_send
+
+    def _get_send_wrapper(self):
+        def send_wrapper(http_adapter, request, **kwargs):
+            """Wraps HTTPAdapter.send"""
+
+            request_wrapper = self.RequestWrapper(request=request)
+            span = before_http_request(request=request_wrapper,
+                                       current_span_extractor=get_current_span)
+            with span:
+                response = _HTTPAdapter_send(http_adapter, request, **kwargs)
+                if getattr(response, 'status_code', None) is not None:
+                    span.set_tag(tags.HTTP_STATUS_CODE, response.status_code)
+                if self.response_handler_hook is not None:
+                    self.response_handler_hook(response, span)
+            return response
+        return send_wrapper
 
     class RequestWrapper(AbstractRequestWrapper):
         def __init__(self, request):
@@ -93,4 +114,14 @@ def install_patches():
             return split_host_and_port(host_string=self.host_str,
                                        scheme=self.scheme)
 
-    requests.adapters.HTTPAdapter.send = send_wrapper
+
+patcher = RequestsPatcher()
+
+
+def set_patcher(custom_patcher):
+    global patcher
+    patcher = custom_patcher
+
+
+def install_patches():
+    patcher.install_patches()
