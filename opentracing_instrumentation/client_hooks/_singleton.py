@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Uber Technologies, Inc.
+# Copyright (c) 2015,2018 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,8 +20,11 @@
 
 from __future__ import absolute_import
 
-from builtins import range
 import functools
+
+
+NOT_CALLED = 1
+CALLED = 2
 
 
 def singleton(func):
@@ -29,21 +32,23 @@ def singleton(func):
     This decorator allows you to make sure that a function is called once and
     only once. Note that recursive functions will still work.
 
-    Not thread-safe.
+    WARNING: Not thread-safe!!!
     """
-    NOT_CALLED, IN_CALL, CALLED = list(range(3))
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if wrapper.__call_state__ == CALLED:
             return
-        old_state, wrapper.__call_state__ = wrapper.__call_state__, IN_CALL
         ret = func(*args, **kwargs)
-        if old_state == NOT_CALLED:
-            wrapper.__call_state__ = CALLED
+        wrapper.__call_state__ = CALLED
         return ret
 
-    wrapper.__call_state__ = NOT_CALLED
+    def reset():
+        wrapper.__call_state__ = NOT_CALLED
+
+    wrapper.reset = reset
+    reset()
+
     # save original func to be able to patch and restore multiple times from
     # unit tests
     wrapper.__original_func = func
