@@ -38,15 +38,24 @@ Finally, a `@traced_function` decorator is provided for manual instrumentation.
 
 ### In-process Context Propagation
 
-`span_in_context` implements context propagation using the current `opentracing.tracer.scope_manager`,
+As part of the OpenTracing 2.0 API, in-process `Span` propagation happens through the newly defined
+[ScopeManager](https://opentracing-python.readthedocs.io/en/latest/api.html#scope-managers)
+interface. However, the existing functionality has been kept to provide backwards compatibility and
+ease code migration:
+
+`span_in_context()` implements context propagation using the current `opentracing.tracer.scope_manager`,
 expected to be a thread-local based `ScopeManager`, such as `opentracing.scope_managers.ThreadLocalScopeManager`.
 
-`span_in_stack_context` implements context propagation for Tornado applications
+`span_in_stack_context()` implements context propagation for Tornado applications
 using the current `opentracing.tracer.scope_manager` too, expected to be an instance of
  `opentracing.scope_managers.tornado.TornadoScopeManager`.
 
-**Note**: Direct access to `request_context` as well as `RequestContext` and `RequestContextManager`
-has been deprecated. Use the functions previously mentioned.
+`get_current_span()` returns the currently active `Span`, if any.
+
+Direct access to the `request_context` module as well as usage of `RequestContext` and `RequestContextManager`
+have been **fully** deprecated, as they do not integrate with the new OpenTracing 2.0 API.
+Using them along `get_current_span()` is guaranteed to work, but it is **highly** recommended
+to switch to the previously mentioned functions.
 
 ## Usage
 
@@ -131,7 +140,12 @@ And here's an example for middleware in Tornado-based app:
 
 ```python
 
+import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
 from opentracing_instrumentation import span_in_stack_context
+
+
+opentracing.tracer = MyOpenTracingTracer(scope_manager=TornadoScopeManager())
 
 
 class TracerMiddleware(object):
