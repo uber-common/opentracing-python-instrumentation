@@ -35,6 +35,7 @@ _ROLLBACK = 'rollback'
 _TRANS_TAGS = [_BEGIN, _COMMIT, _ROLLBACK]
 
 NO_ARG = object()
+parent_span_func = get_current_span
 
 
 def db_span(sql_statement,
@@ -42,7 +43,7 @@ def db_span(sql_statement,
             sql_parameters=None,
             connect_params=None,
             cursor_params=None):
-    span = get_current_span()
+    span = parent_span_func()
 
     @contextlib2.contextmanager
     def empty_ctx_mgr():

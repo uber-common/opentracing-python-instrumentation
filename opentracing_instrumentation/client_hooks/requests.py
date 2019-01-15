@@ -21,6 +21,7 @@
 from __future__ import absolute_import
 
 from future import standard_library
+
 standard_library.install_aliases()
 import logging
 import urllib.parse
@@ -42,9 +43,10 @@ except ImportError:  # pragma: no cover
 else:
     _HTTPAdapter_send = requests.adapters.HTTPAdapter.send
 
+parent_span_func = get_current_span
+
 
 class RequestsPatcher(Patcher):
-
     applicable = '_HTTPAdapter_send' in globals()
     response_handler_hook = None
 
@@ -72,10 +74,9 @@ class RequestsPatcher(Patcher):
     def _get_send_wrapper(self):
         def send_wrapper(http_adapter, request, **kwargs):
             """Wraps HTTPAdapter.send"""
-
             request_wrapper = self.RequestWrapper(request=request)
             span = before_http_request(request=request_wrapper,
-                                       current_span_extractor=get_current_span)
+                                       current_span_extractor=parent_span_func)
             with span:
                 response = _HTTPAdapter_send(http_adapter, request, **kwargs)
                 if getattr(response, 'status_code', None) is not None:
@@ -83,6 +84,7 @@ class RequestsPatcher(Patcher):
                 if self.response_handler_hook is not None:
                     self.response_handler_hook(response, span)
             return response
+
         return send_wrapper
 
     class RequestWrapper(AbstractRequestWrapper):

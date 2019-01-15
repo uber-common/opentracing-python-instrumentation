@@ -54,6 +54,28 @@ def install_all_patches():
     requests.install_patches()
 
 
+def enable_specific_span_extractor(span_extractor_func):
+    """
+    A convenience method to override the default method
+      to extract parent span.
+    It has to be called before install_patches
+
+
+    :parent span_extractor_func : a function that returns parent span
+    """
+    from . import _dbapi2
+    from . import requests
+    from . import sqlalchemy
+    from . import strict_redis
+    from . import urllib
+
+    _dbapi2.parent_span_func = span_extractor_func
+    requests.parent_span_func = span_extractor_func
+    sqlalchemy.parent_span_func = span_extractor_func
+    strict_redis.parent_span_func = span_extractor_func
+    urllib.parent_span_func = span_extractor_func
+
+
 def install_patches(patchers='all'):
     """
     Usually called from middleware to install client hooks

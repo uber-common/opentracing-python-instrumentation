@@ -38,6 +38,7 @@ IPV4_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 
 METHOD_NAMES = ['execute_command', 'get', 'set', 'setex', 'setnx']
 ORIG_METHODS = {}
+parent_span_func = get_current_span
 
 
 @singleton
@@ -92,7 +93,7 @@ def install_patches():
     def execute_command(self, cmd, *args, **kwargs):
         operation_name = 'redis:%s' % (cmd,)
         span = utils.start_child_span(
-            operation_name=operation_name, parent=get_current_span())
+            operation_name=operation_name, parent=parent_span_func())
         span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(ext_tags.PEER_SERVICE, 'redis')
 

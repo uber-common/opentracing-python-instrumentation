@@ -35,6 +35,8 @@ from ._singleton import singleton
 
 log = logging.getLogger(__name__)
 
+parent_span_func = get_current_span
+
 
 @singleton
 def install_patches():
@@ -51,7 +53,7 @@ def install_patches():
                 request_wrapper = Urllib2RequestWrapper(request=req)
                 span = before_http_request(
                     request=request_wrapper,
-                    current_span_extractor=get_current_span)
+                    current_span_extractor=parent_span_func)
                 with span:
                     if base_cls:
                         # urllib2.AbstractHTTPHandler doesn't support super()

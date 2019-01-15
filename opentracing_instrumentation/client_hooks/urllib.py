@@ -28,6 +28,7 @@ from .. import utils
 from ._singleton import singleton
 
 log = logging.getLogger(__name__)
+parent_span_func = get_current_span
 
 
 @singleton
@@ -51,7 +52,7 @@ def install_patches():
             port = parsed_url.port or None
 
             span = utils.start_child_span(
-                operation_name='urllib', parent=get_current_span())
+                operation_name='urllib', parent=parent_span_func())
 
             span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
 
