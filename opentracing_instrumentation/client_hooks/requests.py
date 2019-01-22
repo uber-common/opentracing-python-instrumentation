@@ -27,11 +27,11 @@ import logging
 import urllib.parse
 
 from opentracing.ext import tags
-from ..request_context import get_current_span
 from ..http_client import AbstractRequestWrapper
 from ..http_client import before_http_request
 from ..http_client import split_host_and_port
 from ._patcher import Patcher
+from ._current_span import current_span_func
 
 log = logging.getLogger(__name__)
 
@@ -42,8 +42,6 @@ except ImportError:  # pragma: no cover
     pass
 else:
     _HTTPAdapter_send = requests.adapters.HTTPAdapter.send
-
-parent_span_func = get_current_span
 
 
 class RequestsPatcher(Patcher):
@@ -76,7 +74,8 @@ class RequestsPatcher(Patcher):
             """Wraps HTTPAdapter.send"""
             request_wrapper = self.RequestWrapper(request=request)
             span = before_http_request(request=request_wrapper,
-                                       current_span_extractor=parent_span_func)
+                                       current_span_extractor=current_span_func
+                                       )
             with span:
                 response = _HTTPAdapter_send(http_adapter, request, **kwargs)
                 if getattr(response, 'status_code', None) is not None:

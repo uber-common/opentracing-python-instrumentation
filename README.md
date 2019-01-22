@@ -182,13 +182,13 @@ patcher.set_response_handler_hook(hook)
 ```
 
 If you have issues with getting the parent span, it is possible to override
-default function that retrieve parent span. 
+default function that retrieves parent span. 
 
 ```python 
 from opentracing_instrumentation.client_hooks import install_all_patches,
-     enable_specific_span_extractor
+     set_current_span_func
 
-enable_specific_span_extractor(my_custom_extractor_func)
+set_current_span_func(my_custom_extractor_func)
 install_all_patches()
 
 ``` 
