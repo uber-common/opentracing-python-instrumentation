@@ -24,14 +24,15 @@ import logging
 import six
 
 from future import standard_library
+
 standard_library.install_aliases()
 
 from tornado.httputil import HTTPHeaders
-from opentracing_instrumentation.request_context import get_current_span
 from opentracing_instrumentation.http_client import AbstractRequestWrapper
 from opentracing_instrumentation.http_client import before_http_request
 from opentracing_instrumentation.http_client import split_host_and_port
 from ._singleton import singleton
+from ._current_span import current_span_func
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def install_patches():
                 request_wrapper = Urllib2RequestWrapper(request=req)
                 span = before_http_request(
                     request=request_wrapper,
-                    current_span_extractor=get_current_span)
+                    current_span_extractor=current_span_func)
                 with span:
                     if base_cls:
                         # urllib2.AbstractHTTPHandler doesn't support super()
