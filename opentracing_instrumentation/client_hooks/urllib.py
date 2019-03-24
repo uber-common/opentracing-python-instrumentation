@@ -23,9 +23,11 @@ from __future__ import absolute_import
 import logging
 import six
 from opentracing.ext import tags as ext_tags
-from opentracing_instrumentation import get_current_span
+
+
 from .. import utils
 from ._singleton import singleton
+from ._current_span import current_span_func
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ def install_patches():
             port = parsed_url.port or None
 
             span = utils.start_child_span(
-                operation_name='urllib', parent=get_current_span())
+                operation_name='urllib', parent=current_span_func())
 
             span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
 

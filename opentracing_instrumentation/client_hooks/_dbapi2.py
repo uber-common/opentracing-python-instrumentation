@@ -23,7 +23,9 @@ import contextlib2
 import wrapt
 
 from opentracing.ext import tags as ext_tags
-from .. import get_current_span, utils
+
+from ._current_span import current_span_func
+from .. import utils
 from ..local_span import func_span
 
 # Utils for instrumenting DB API v2 compatible drivers.
@@ -42,7 +44,7 @@ def db_span(sql_statement,
             sql_parameters=None,
             connect_params=None,
             cursor_params=None):
-    span = get_current_span()
+    span = current_span_func()
 
     @contextlib2.contextmanager
     def empty_ctx_mgr():

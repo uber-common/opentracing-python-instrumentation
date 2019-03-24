@@ -27,6 +27,7 @@ else:
 
 import importlib
 import logging
+from ._current_span import set_current_span_func # noqa
 
 
 def install_all_patches():

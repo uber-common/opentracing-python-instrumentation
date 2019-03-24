@@ -23,7 +23,7 @@ from __future__ import absolute_import
 from opentracing.ext import tags as ext_tags
 import re
 
-from opentracing_instrumentation import get_current_span
+from ._current_span import current_span_func
 from ._singleton import singleton
 from .. import utils
 
@@ -92,7 +92,7 @@ def install_patches():
     def execute_command(self, cmd, *args, **kwargs):
         operation_name = 'redis:%s' % (cmd,)
         span = utils.start_child_span(
-            operation_name=operation_name, parent=get_current_span())
+            operation_name=operation_name, parent=current_span_func())
         span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
         span.set_tag(ext_tags.PEER_SERVICE, 'redis')
 
