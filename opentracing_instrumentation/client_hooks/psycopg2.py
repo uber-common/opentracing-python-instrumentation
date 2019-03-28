@@ -1,4 +1,4 @@
-# Copyright (c) 2017 Uber Technologies, Inc.
+# Copyright (c) 2017,2019 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,19 +25,27 @@ from ._singleton import singleton
 
 # Try to save the original entry points
 try:
-    import psycopg2
+    import psycopg2.extensions
 except ImportError:  # pragma: no cover
     pass
 else:
     _psycopg2_connect = psycopg2.connect
+    _psycopg2_extensions_register_type = psycopg2.extensions.register_type
 
 
 @singleton
 def install_patches():
-    try:
-        import psycopg2
-    except ImportError:  # pragma: no cover
+    if 'psycopg2' not in globals():
         return
+
+    # the original register_type method checks a type of the conn_or_curs
+    # and it doesn't accept wrappers
+    def register_type(obj, conn_or_curs=None):
+        if isinstance(conn_or_curs, ConnectionWrapper):
+            conn_or_curs = conn_or_curs.__wrapped__
+        _psycopg2_extensions_register_type(obj, conn_or_curs)
+
+    psycopg2.extensions.register_type = register_type
 
     factory = ConnectionFactory(connect_func=psycopg2.connect,
                                 module_name='psycopg2',

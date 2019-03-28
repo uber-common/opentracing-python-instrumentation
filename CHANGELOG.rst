@@ -6,7 +6,7 @@ History
 3.0.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix compatibility with Peewee ORM (#72) <Aliaksei Urbanski>
 
 
 3.0.1 (2019-04-28)
