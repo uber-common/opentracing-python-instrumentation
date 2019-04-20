@@ -29,6 +29,11 @@ import tornado.web
 
 from opentracing_instrumentation.client_hooks.requests import patcher
 from opentracing_instrumentation.request_context import span_in_context
+try:
+    import asyncio
+    asyncio_available = True
+except ImportError:
+    asyncio_available = False
 
 
 @pytest.fixture(name='response_handler_hook')
@@ -61,13 +66,16 @@ def tornado_url(request, base_url, _unused_port):
     app = tornado.web.Application([('/', Handler)])
 
     def run_http_server():
+        if asyncio_available:
+            # In python 3+ we should make ioloop in new thread explicitly.
+            asyncio.set_event_loop(asyncio.new_event_loop())
         io_loop = tornado.ioloop.IOLoop.current()
         http_server = tornado.httpserver.HTTPServer(app)
         http_server.add_socket(_unused_port[0])
 
         def stop():
             http_server.stop()
-            io_loop.stop()
+            io_loop.add_callback(io_loop.stop)
             thread.join()
 
         # finalizer should be added before starting of the IO loop
