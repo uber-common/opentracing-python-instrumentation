@@ -20,8 +20,11 @@
 
 import pytest
 
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
 from mock import Mock, patch
 import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
 import tornado.gen
 import tornado.web
 import tornado.httpserver
@@ -63,6 +66,16 @@ def tornado_http_patch():
         yield None
     finally:
         reset_patchers()
+
+
+@pytest.fixture
+def tracer():
+    t = BasicTracer(
+        recorder=InMemoryRecorder(),
+        scope_manager=TornadoScopeManager(),
+    )
+    t.register_required_propagators()
+    return t
 
 
 @pytest.mark.gen_test(run_sync=False)

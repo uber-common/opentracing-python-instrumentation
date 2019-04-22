@@ -23,11 +23,16 @@ from builtins import object
 import threading
 
 import opentracing
-import tornado.stack_context
+from opentracing.scope_managers.tornado import TornadoScopeManager
+from opentracing.scope_managers.tornado import tracer_stack_context
+from opentracing.scope_managers.tornado import ThreadSafeStackContext  # noqa
 
 
 class RequestContext(object):
     """
+    DEPRECATED, use either span_in_context() or span_in_stack_context()
+    instead.
+
     RequestContext represents the context of a request being executed.
 
     Useful when a service needs to make downstream calls to other services
@@ -45,7 +50,11 @@ class RequestContext(object):
 
 
 class RequestContextManager(object):
-    """A context manager that saves RequestContext in thread-local state.
+    """
+    DEPRECATED, use either span_in_context() or span_in_stack_context()
+    instead.
+
+    A context manager that saves RequestContext in thread-local state.
 
     Intended for use with ThreadSafeStackContext (a thread-safe
     replacement for Tornado's StackContext) or as context manager
@@ -85,79 +94,24 @@ class RequestContextManager(object):
         return False
 
 
-class ThreadSafeStackContext(tornado.stack_context.StackContext):
+class _TracerEnteredStackContext(object):
     """
-    Thread safe version of Tornado's StackContext (up to 4.3)
+    An entered tracer_stack_context() object.
 
-    Port of Uber's internal tornado-extras (by @sema).
-
-    Tornado's StackContext works as follows:
-    - When entering a context, create an instance of StackContext and
-      add add this instance to the current "context stack"
-    - If execution transfers to another thread (using the wraps helper
-      method),  copy the current "context stack" and apply that in the new
-      thread when execution starts
-    - A context stack can be entered/exited by traversing the stack and
-      calling enter/exit on all elements. This is how the `wraps` helper
-      method enters/exits in new threads.
-
-    - StackContext has an internal pointer to a context factory (i.e.
-      RequestContext), and an internal stack of applied contexts (instances
-      of RequestContext) for each instance of StackContext. RequestContext
-      instances are entered/exited from the stack as the StackContext
-      is entered/exited
-    - However, the enter/exit logic and maintenance of this stack of
-      RequestContext instances is not thread safe.
-
-    ```
-    def __init__(self, context_factory):
-        self.context_factory = context_factory
-        self.contexts = []
-        self.active = True
-
-    def enter(self):
-        context = self.context_factory()
-        self.contexts.append(context)
-        context.__enter__()
-
-    def exit(self, type, value, traceback):
-        context = self.contexts.pop()
-        context.__exit__(type, value, traceback)
-    ```
-
-    Unexpected semantics of Tornado's default StackContext implementation:
-
-    - There exist a race on `self.contexts`, where thread A enters a
-      context, thread B enters a context, and thread A exits its context.
-      In this case, the exit by thread A pops the instance created by
-      thread B and calls exit on this instance.
-    - There exists a race between `enter` and `exit` where thread A
-      executes the two first statements of enter (create instance and
-      add to contexts) and thread B executes exit, calling exit on an
-      instance that has been initialized but not yet exited (and
-      subsequently this instance will then be entered).
-
-    The ThreadSafeStackContext changes the internal contexts stack to be
-    thread local, fixing both of the above issues.
+    Intended to have a ready-to-use context where
+    Span objects can be activated before the context
+    itself is returned to the user.
     """
 
-    def __init__(self, *args, **kwargs):
-        class LocalContexts(threading.local):
-            def __init__(self):
-                super(LocalContexts, self).__init__()
-                self._contexts = []
+    def __init__(self, context):
+        self._context = context
+        self._deactivation_cb = context.__enter__()
 
-            def append(self, item):
-                self._contexts.append(item)
+    def __enter__(self):
+        return self._deactivation_cb
 
-            def pop(self):
-                return self._contexts.pop()
-
-        super(ThreadSafeStackContext, self).__init__(*args, **kwargs)
-
-        if hasattr(self, 'contexts'):
-            # only patch if context exists
-            self.contexts = LocalContexts()
+    def __exit__(self, type, value, traceback):
+        return self._context.__exit__(type, value, traceback)
 
 
 def get_current_span():
@@ -168,8 +122,14 @@ def get_current_span():
         If no request context is present in thread local, or the context
         has no span, return None.
     """
+    # Check against the old, ScopeManager-less implementation,
+    # for backwards compatibility.
     context = RequestContextManager.current_context()
-    return context.span if context else None
+    if context is not None:
+        return context.span
+
+    active = opentracing.tracer.scope_manager.active
+    return active.span if active else None
 
 
 def span_in_context(span):
@@ -210,8 +170,12 @@ def span_in_context(span):
     :return:
         Return context manager that wraps the request context.
     """
-    context = RequestContext(span)
-    return RequestContextManager(context)
+
+    # Return a no-op Scope if None was specified.
+    if span is None:
+        return opentracing.Scope(None, None)
+
+    return opentracing.tracer.scope_manager.activate(span, False)
 
 
 def span_in_stack_context(span):
@@ -243,5 +207,20 @@ def span_in_stack_context(span):
     :return:
         Return StackContext that wraps the request context.
     """
-    context = RequestContext(span)
-    return ThreadSafeStackContext(lambda: RequestContextManager(context))
+
+    if not isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
+        raise RuntimeError('scope_manager is not TornadoScopeManager')
+
+    # Enter the newly created stack context so we have
+    # storage available for Span activation.
+    context = tracer_stack_context()
+    entered_context = _TracerEnteredStackContext(context)
+
+    if span is None:
+        return entered_context
+
+    opentracing.tracer.scope_manager.activate(span, False)
+    assert opentracing.tracer.active_span is not None
+    assert opentracing.tracer.active_span is span
+
+    return entered_context

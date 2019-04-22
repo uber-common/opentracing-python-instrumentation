@@ -29,12 +29,32 @@ from tornado import gen
 from tornado.locks import Condition
 from tornado.stack_context import wrap
 
+from basictracer import BasicTracer
+from basictracer.recorder import InMemoryRecorder
+import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
+
 from opentracing_instrumentation.request_context import (
     get_current_span, span_in_stack_context,
 )
 
+@pytest.fixture
+def tracer():
+    old_tracer = opentracing.tracer
+    t = BasicTracer(
+        recorder=InMemoryRecorder(),
+        scope_manager=TornadoScopeManager(),
+    )
+    t.register_required_propagators()
+    opentracing.tracer = t
 
-def test__request_context_is_thread_safe():
+    try:
+        yield t
+    finally:
+        opentracing.tracer = old_tracer
+
+
+def test__request_context_is_thread_safe(tracer):
     """
     Port of Uber's internal tornado-extras (by @sema).
 

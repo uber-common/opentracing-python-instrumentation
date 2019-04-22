@@ -38,7 +38,24 @@ Finally, a `@traced_function` decorator is provided for manual instrumentation.
 
 ### In-process Context Propagation
 
-`request_context` implements thread-local based context propagation facility.
+As part of the OpenTracing 2.0 API, in-process `Span` propagation happens through the newly defined
+[ScopeManager](https://opentracing-python.readthedocs.io/en/latest/api.html#scope-managers)
+interface. However, the existing functionality has been kept to provide backwards compatibility and
+ease code migration:
+
+`span_in_context()` implements context propagation using the current `opentracing.tracer.scope_manager`,
+expected to be a thread-local based `ScopeManager`, such as `opentracing.scope_managers.ThreadLocalScopeManager`.
+
+`span_in_stack_context()` implements context propagation for Tornado applications
+using the current `opentracing.tracer.scope_manager` too, expected to be an instance of
+ `opentracing.scope_managers.tornado.TornadoScopeManager`.
+
+`get_current_span()` returns the currently active `Span`, if any.
+
+Direct access to the `request_context` module as well as usage of `RequestContext` and `RequestContextManager`
+have been **fully** deprecated, as they do not integrate with the new OpenTracing 2.0 API.
+Using them along `get_current_span()` is guaranteed to work, but it is **highly** recommended
+to switch to the previously mentioned functions.
 
 ## Usage
 
@@ -64,7 +81,7 @@ Here's an example of a middleware for [Clay framework](https://github.com/uber/c
 
 ```python
 
-from opentracing_instrumentation.request_context import RequestContextManager
+from opentracing_instrumentation import span_in_context
 from opentracing_instrumentation.http_server import before_request
 from opentracing_instrumentation.http_server import WSGIRequestWrapper
 from opentracing_instrumentation.client_hooks import install_all_patches
@@ -113,7 +130,7 @@ def create_wsgi_middleware(other_wsgi, tracer=None):
 
             return start_response(status, response_headers)
 
-        with RequestContextManager(span=span):
+        with span_in_context(span):
             return other_wsgi(environ, start_response_wrapper)
 
     return wsgi_tracing_middleware
@@ -122,6 +139,15 @@ def create_wsgi_middleware(other_wsgi, tracer=None):
 And here's an example for middleware in Tornado-based app:
 
 ```python
+
+import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
+from opentracing_instrumentation import span_in_stack_context
+
+
+opentracing.tracer = MyOpenTracingTracer(scope_manager=TornadoScopeManager())
+
+
 class TracerMiddleware(object):
 
     def __init__(self):
@@ -153,10 +179,7 @@ def run_coroutine_with_span(span, func, *args, **kwargs):
     :param args: Positional args to func, if any.
     :param kwargs: Keyword args to func, if any.
     """
-    def mgr():
-        return RequestContextManager(span)
-
-    with tornado.stack_context.StackContext(mgr):
+    with span_in_stack_context(span):
         return func(*args, **kwargs)
 ```
 

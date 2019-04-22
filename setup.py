@@ -36,7 +36,7 @@ setup(
         'wrapt',
         'tornado>=4.1,<5',
         'contextlib2',
-        'opentracing>=1.1,<2',
+        'opentracing>=2.0,<2.1',
         'six',
     ],
     extras_require={
@@ -57,7 +57,7 @@ setup(
             'pytest-localserver',
             'pytest-mock',
             'pytest-tornado',
-            'basictracer>=2.1,<3',
+            'basictracer>=3,<4',
             'redis',
             'Sphinx',
             'sphinx_rtd_theme',

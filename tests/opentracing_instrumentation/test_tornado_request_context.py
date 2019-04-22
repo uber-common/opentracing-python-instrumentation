@@ -21,16 +21,20 @@
 from __future__ import absolute_import
 
 import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
 from opentracing_instrumentation.request_context import (
     get_current_span,
     span_in_stack_context,
     RequestContext,
     RequestContextManager,
 )
+from mock import patch
 from tornado import gen
+from tornado import stack_context
 from tornado.testing import AsyncTestCase, gen_test
 
 
+@patch('opentracing.tracer', new=opentracing.Tracer(TornadoScopeManager()))
 class TornadoTraceContextTest(AsyncTestCase):
 
     @gen_test
@@ -71,6 +75,25 @@ class TornadoTraceContextTest(AsyncTestCase):
         assert mgr._context.span == span
         mgr = RequestContextManager(span=span)  # span as span arg
         assert mgr._context.span == span
+
+    @gen_test
+    def test_request_context_manager_backwards_compatible(self):
+        span = opentracing.tracer.start_span(operation_name='test')
+
+        @gen.coroutine
+        def check():
+            assert get_current_span() == span
+
+        # Bypass ScopeManager/span_in_stack_context() and use
+        # RequestContextManager directly.
+        def run_coroutine(span, coro):
+            def mgr():
+                return RequestContextManager(span)
+
+            with stack_context.StackContext(mgr):
+                return coro()
+
+        yield run_coroutine(span, check)
 
 
 def run_coroutine_with_span(span, coro, *args, **kwargs):

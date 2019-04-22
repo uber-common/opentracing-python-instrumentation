@@ -22,6 +22,7 @@ from __future__ import absolute_import
 from builtins import object
 import mock
 import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
 
 import tornado.stack_context
 import tornado.concurrent
@@ -38,6 +39,7 @@ def extract_call_site_tag(span, *_, **kwargs):
         span.set_tag('call_site_tag', kwargs['call_site_tag'])
 
 
+@mock.patch('opentracing.tracer', opentracing.Tracer(TornadoScopeManager()))
 class TracedFuctionDecoratorTest(AsyncTestCase):
 
     @gen_test

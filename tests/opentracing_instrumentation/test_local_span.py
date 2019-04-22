@@ -19,13 +19,17 @@
 # THE SOFTWARE.
 from __future__ import absolute_import
 
+from mock import patch
+
 import opentracing
+from opentracing.scope_managers import ThreadLocalScopeManager
 from opentracing_instrumentation.local_span import func_span
 from opentracing_instrumentation.client_hooks._dbapi2 import db_span, _COMMIT
 from opentracing_instrumentation.client_hooks._singleton import singleton
 from opentracing_instrumentation import span_in_context
 
 
+@patch('opentracing.tracer', new=opentracing.Tracer(ThreadLocalScopeManager()))
 def test_func_span_without_parent():
     with func_span('test', require_active_trace=False) as span:
         assert span is not None
@@ -43,6 +47,7 @@ def test_func_span():
             assert span is child_span
 
 
+@patch('opentracing.tracer', new=opentracing.Tracer(ThreadLocalScopeManager()))
 def test_db_span_without_parent():
     with db_span('test', 'MySQLdb') as span:
         assert span is None
