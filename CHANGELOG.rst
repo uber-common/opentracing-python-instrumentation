@@ -3,24 +3,24 @@
 History
 -------
 
-2.5.0 (unreleased)
+3.0.0 (2019-04-27)
 ------------------
 
-- Adopt the OpenTracing 2.0 API.
-- Add support for Python 3.7
-- Drop support of Python 3.3
-- Update the requirements
-- Fix flake8 warnings
-- Add tox.ini
-- Update setup.cfg
-- Enable branch coverage measurement
-- Update the README
-- Unify tracer fixture and move it to conftest.py
-- Fix some deprecation warnings
-- Clean up imports
-- Add ability to set ``response_handler_hook`` using ``set_response_handler_hook`` method of ``RequestsPatcher``
-- Fix ``opentracing_instrumentation.client_hooks.strict_redis.reset_patches`` method
-
+- Upgrade to OpenTracing 2.0 API (#54) <Carlos Alberto Cortez>
+- Permit the injection of specific parent span (#73) <CARRIERE Etienne>
+  - Fix `opentracing_instrumentation.client_hooks.strict_redis.reset_patches` method
+- Add `response_handler_hook` to `requests` instrumentation (#66) <Aliaksei Urbanski>
+- Add unit test for ThreadSafeStackContext (#71) <Yuri Shkuro>
+- Improve testing (#70) (5 months ago) <Aliaksei Urbanski>
+    - Add tox.ini
+    - Update setup.cfg
+    - Enable branch coverage measurement
+    - Update the README
+    - Unify tracer fixture and move it to conftest.py
+    - Fix some deprecation warnings
+    - Clean up imports
+- Update supported Python versions (+3.7, -3.3) (#69) <Aliaksei Urbanski>
+- Fix function call in code example (#67) <Charlotte Iwasaki>
 
 2.4.3 (2018-08-24)
 ------------------
