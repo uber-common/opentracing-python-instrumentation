@@ -3,10 +3,10 @@
 History
 -------
 
-3.0.1 (unreleased)
+3.0.1 (2019-04-28)
 ------------------
 
-- Nothing changed yet.
+- Unpin OpenTracing upper bound to <3
 
 
 3.0.0 (2019-04-27)
