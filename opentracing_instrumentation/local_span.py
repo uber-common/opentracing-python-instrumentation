@@ -139,7 +139,10 @@ def traced_function(func=None, name=None, on_start=None,
                             span.log(event='exception', payload=exception)
                             span.set_tag('error', 'true')
                         span.finish()
-                    res.add_done_callback(done_callback)
+                    if res.done():
+                        done_callback(res)
+                    else:
+                        res.add_done_callback(done_callback)
                 else:
                     deactivate_cb()
                     span.finish()
