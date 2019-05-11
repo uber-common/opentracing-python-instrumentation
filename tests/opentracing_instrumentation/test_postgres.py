@@ -1,4 +1,4 @@
-# Copyright (c) 2018 Uber Technologies, Inc.
+# Copyright (c) 2018,2019 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -18,10 +18,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from builtins import object
-
+import mock
 import psycopg2 as psycopg2_client
 import pytest
+from psycopg2 import extensions as pg_extensions
 from sqlalchemy import (
     Column,
     Integer,
@@ -35,6 +35,7 @@ from sqlalchemy.orm import mapper, sessionmaker
 from opentracing_instrumentation.client_hooks import psycopg2
 
 
+SKIP_REASON = 'Postgres is not running or cannot connect'
 POSTGRES_CONNECTION_STRING = 'postgresql://localhost/travis_ci_test'
 
 
@@ -80,6 +81,11 @@ class User(object):
 mapper(User, user)
 
 
+@pytest.fixture()
+def connection():
+    return psycopg2_client.connect(POSTGRES_CONNECTION_STRING)
+
+
 def is_postgres_running():
     try:
         with psycopg2_client.connect(POSTGRES_CONNECTION_STRING):
@@ -89,7 +95,7 @@ def is_postgres_running():
         return False
 
 
-@pytest.mark.skipif(not is_postgres_running(), reason='Postgres is not running or cannot connect')
+@pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
 def test_db(tracer, engine, session):
     metadata.create_all(engine)
     user1 = User(name='user1', fullname='User 1', password='password')
@@ -99,7 +105,39 @@ def test_db(tracer, engine, session):
     # If the test does not raised an error, it is passing
 
 
-@pytest.mark.skipif(not is_postgres_running(), reason='Postgres is not running or cannot connect')
-def test_connection_proxy(tracer, engine):
+@pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
+def test_connection_proxy(connection):
+    assert isinstance(connection, psycopg2.ConnectionWrapper)
+
     # Test that connection properties are proxied by ContextManagerConnectionWrapper
-    assert engine.raw_connection().connection.closed == 0
+    assert connection.closed == 0
+
+
+def _test_register_type(connection):
+    assert not connection.string_types
+
+    test_type = pg_extensions.UNICODE
+    pg_extensions.register_type(test_type, connection)
+
+    assert connection.string_types
+    for string_type in connection.string_types.values():
+        assert string_type is test_type
+
+
+@pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
+def test_register_type_for_wrapped_connection(connection):
+    _test_register_type(connection)
+
+
+@pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
+def test_register_type_for_raw_connection(connection):
+    _test_register_type(connection.__wrapped__)
+
+
+@mock.patch.object(psycopg2, 'psycopg2')
+@mock.patch.object(psycopg2, 'ConnectionFactory')
+def test_install_patches_skip(factory_mock, *mocks):
+    del psycopg2.psycopg2
+    psycopg2.install_patches.reset()
+    psycopg2.install_patches()
+    factory_mock.assert_not_called()
