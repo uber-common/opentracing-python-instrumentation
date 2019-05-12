@@ -36,7 +36,7 @@ from opentracing_instrumentation.client_hooks import psycopg2
 
 
 SKIP_REASON = 'Postgres is not running or cannot connect'
-POSTGRES_CONNECTION_STRING = 'postgresql://localhost/travis_ci_test'
+POSTGRES_CONNECTION_STRING = 'postgresql://postgres@localhost/test'
 
 
 @pytest.fixture

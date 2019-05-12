@@ -41,11 +41,14 @@ setup(
     ],
     extras_require={
         'tests': [
+            'boto3',
+            'botocore',
             'coveralls',
             'doubles',
             'flake8',
             'flake8-quotes',
             'mock',
+            'moto',
             'psycopg2-binary',
             'sqlalchemy>=1.2.0',
 
