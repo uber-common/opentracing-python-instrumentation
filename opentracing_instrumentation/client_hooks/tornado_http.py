@@ -28,6 +28,8 @@ import logging
 import urllib.parse
 
 from tornado.httputil import HTTPHeaders
+
+from opentracing.ext import tags
 from opentracing_instrumentation.http_client import AbstractRequestWrapper
 from opentracing_instrumentation.http_client import before_http_request
 from opentracing_instrumentation.http_client import split_host_and_port
@@ -130,9 +132,10 @@ def traced_fetch_impl(real_fetch_impl):
 
         def new_callback(response):
             if hasattr(response, 'code') and response.code:
-                span.set_tag('http.status_code', '%s' % response.code)
+                span.set_tag(tags.HTTP_STATUS_CODE, '%s' % response.code)
             if hasattr(response, 'error') and response.error:
-                span.log(event='error', payload='%s' % response.error)
+                span.set_tag(tags.ERROR, True)
+                span.log(event=tags.ERROR, payload='%s' % response.error)
             span.finish()
             return callback(response)
 

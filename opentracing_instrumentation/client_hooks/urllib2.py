@@ -28,6 +28,7 @@ from future import standard_library
 standard_library.install_aliases()
 
 from tornado.httputil import HTTPHeaders
+from opentracing.ext import tags as ext_tags
 from opentracing_instrumentation.http_client import AbstractRequestWrapper
 from opentracing_instrumentation.http_client import before_http_request
 from opentracing_instrumentation.http_client import split_host_and_port
@@ -60,7 +61,7 @@ def install_patches():
                     else:
                         resp = super(DerivedHandler, self).do_open(conn, req)
                     if resp.code is not None:
-                        span.set_tag('http.status_code', resp.code)
+                        span.set_tag(ext_tags.HTTP_STATUS_CODE, resp.code)
                 return resp
 
         return DerivedHandler
