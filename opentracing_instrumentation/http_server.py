@@ -52,6 +52,7 @@ def before_request(request, tracer=None):
     tags_dict = {
         tags.SPAN_KIND: tags.SPAN_KIND_RPC_SERVER,
         tags.HTTP_URL: request.full_url,
+        tags.HTTP_METHOD: request.method,
     }
 
     remote_ip = request.remote_ip

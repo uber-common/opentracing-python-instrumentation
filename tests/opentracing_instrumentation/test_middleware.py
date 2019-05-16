@@ -46,6 +46,7 @@ def test_middleware(with_peer_tags, with_context):
     :return:
     """
     request = mock.MagicMock()
+    request.method = 'GET'
     request.full_url = 'http://localhost:12345/test'
     request.operation = 'my-test'
     if with_peer_tags:
@@ -71,8 +72,9 @@ def test_middleware(with_peer_tags, with_context):
         extract_call.assert_called_with(
             format=Format.HTTP_HEADERS, carrier={})
         expected_tags = {
+            'http.method': 'GET',
             'http.url': 'http://localhost:12345/test',
-            'span.kind': 'server'
+            'span.kind': 'server',
         }
         if with_peer_tags:
             expected_tags.update({
