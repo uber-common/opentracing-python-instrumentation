@@ -21,7 +21,7 @@
 import mock
 import psycopg2 as psycopg2_client
 import pytest
-from psycopg2 import extensions as pg_extensions
+from psycopg2 import extensions as pg_extensions, sql
 from sqlalchemy import (
     Column,
     Integer,
@@ -109,7 +109,8 @@ def test_db(tracer, engine, session):
 def test_connection_proxy(connection):
     assert isinstance(connection, psycopg2.ConnectionWrapper)
 
-    # Test that connection properties are proxied by ContextManagerConnectionWrapper
+    # Test that connection properties are proxied by
+    # ContextManagerConnectionWrapper
     assert connection.closed == 0
 
 
@@ -141,3 +142,21 @@ def test_install_patches_skip(factory_mock, *mocks):
     psycopg2.install_patches.reset()
     psycopg2.install_patches()
     factory_mock.assert_not_called()
+
+
+@pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
+@pytest.mark.parametrize('sql_object', (str, sql.SQL, sql.Composed))
+def test_execute_sql(tracer, engine, session, connection, sql_object):
+    metadata.create_all(engine)
+    user1 = User(name='user1', fullname='User 1', password='password')
+    session.add(user1)
+    with tracer.start_active_span('test') as scope:
+        trace_id = str(scope.span.context.trace_id)
+        cur = connection.cursor()
+        query = '''SELECT %s;'''
+        if sql_object is sql.SQL:
+            query = sql_object(query)
+        if sql_object is sql.Composed:
+            query = sql_object([sql.SQL(query)])
+        cur.execute(query, (trace_id, ))
+        assert cur.fetchall() == [(trace_id, )]

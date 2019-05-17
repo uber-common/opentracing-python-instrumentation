@@ -20,7 +20,7 @@
 
 from __future__ import absolute_import
 from ._dbapi2 import ContextManagerConnectionWrapper as ConnectionWrapper
-from ._dbapi2 import ConnectionFactory
+from ._dbapi2 import ConnectionFactory, CursorWrapper, NO_ARG
 from ._singleton import singleton
 
 # Try to save the original entry points
@@ -31,6 +31,23 @@ except ImportError:  # pragma: no cover
 else:
     _psycopg2_connect = psycopg2.connect
     _psycopg2_extensions_register_type = psycopg2.extensions.register_type
+
+
+class Psycopg2CursorClass(CursorWrapper):
+    """
+    Psycopg2 accept not only string as sql statment, but instances of
+    ``psycopg2.sql.Composable`` that should be represented as string before the
+    executing.
+    """
+    def execute(self, sql, params=NO_ARG):
+        if not isinstance(sql, str):
+            sql = sql.as_string(self)
+        return super(Psycopg2CursorClass, self).execute(sql, params)
+
+
+class Psycopg2ConnectionWrapper(ConnectionWrapper):
+
+    cursor_cls = Psycopg2CursorClass
 
 
 @singleton
@@ -49,7 +66,7 @@ def install_patches():
 
     factory = ConnectionFactory(connect_func=psycopg2.connect,
                                 module_name='psycopg2',
-                                conn_wrapper_ctor=ConnectionWrapper)
+                                conn_wrapper_ctor=Psycopg2ConnectionWrapper)
     setattr(psycopg2, 'connect', factory)
     if hasattr(psycopg2, 'Connect'):
         setattr(psycopg2, 'Connect', factory)

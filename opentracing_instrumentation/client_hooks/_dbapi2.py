@@ -81,6 +81,48 @@ def db_span(sql_statement,
     )
 
 
+class CursorWrapper(wrapt.ObjectProxy):
+    __slots__ = ('_module_name', '_connect_params', '_cursor_params')
+
+    def __init__(self, cursor, module_name,
+                 connect_params=None, cursor_params=None):
+        super(CursorWrapper, self).__init__(wrapped=cursor)
+        self._module_name = module_name
+        self._connect_params = connect_params
+        self._cursor_params = cursor_params
+        # We could also start a span now and then override close() to capture
+        # the life time of the cursor
+
+    def execute(self, sql, params=NO_ARG):
+        with db_span(sql_statement=sql,
+                     sql_parameters=params if params is not NO_ARG else None,
+                     module_name=self._module_name,
+                     connect_params=self._connect_params,
+                     cursor_params=self._cursor_params):
+            if params is NO_ARG:
+                return self.__wrapped__.execute(sql)
+            else:
+                return self.__wrapped__.execute(sql, params)
+
+    def executemany(self, sql, seq_of_parameters):
+        with db_span(sql_statement=sql, sql_parameters=seq_of_parameters,
+                     module_name=self._module_name,
+                     connect_params=self._connect_params,
+                     cursor_params=self._cursor_params):
+            return self.__wrapped__.executemany(sql, seq_of_parameters)
+
+    def callproc(self, proc_name, params=NO_ARG):
+        with db_span(sql_statement='sproc:%s' % proc_name,
+                     sql_parameters=params if params is not NO_ARG else None,
+                     module_name=self._module_name,
+                     connect_params=self._connect_params,
+                     cursor_params=self._cursor_params):
+            if params is NO_ARG:
+                return self.__wrapped__.callproc(proc_name)
+            else:
+                return self.__wrapped__.callproc(proc_name, params)
+
+
 class ConnectionFactory(object):
     """
     Wraps connect_func of the DB API v2 module by creating a wrapper object
@@ -119,13 +161,15 @@ class ConnectionFactory(object):
 class ConnectionWrapper(wrapt.ObjectProxy):
     __slots__ = ('_module_name', '_connect_params')
 
+    cursor_cls = CursorWrapper
+
     def __init__(self, connection, module_name, connect_params):
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
         self._connect_params = connect_params
 
     def cursor(self, *args, **kwargs):
-        return CursorWrapper(
+        return self.cursor_cls(
             cursor=self.__wrapped__.cursor(*args, **kwargs),
             module_name=self._module_name,
             connect_params=self._connect_params,
@@ -182,45 +226,3 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
         outcome = _COMMIT if exc is None else _ROLLBACK
         with db_span(sql_statement=outcome, module_name=self._module_name):
             return self.__wrapped__.__exit__(exc, value, tb)
-
-
-class CursorWrapper(wrapt.ObjectProxy):
-    __slots__ = ('_module_name', '_connect_params', '_cursor_params')
-
-    def __init__(self, cursor, module_name,
-                 connect_params=None, cursor_params=None):
-        super(CursorWrapper, self).__init__(wrapped=cursor)
-        self._module_name = module_name
-        self._connect_params = connect_params
-        self._cursor_params = cursor_params
-        # We could also start a span now and then override close() to capture
-        # the life time of the cursor
-
-    def execute(self, sql, params=NO_ARG):
-        with db_span(sql_statement=sql,
-                     sql_parameters=params if params is not NO_ARG else None,
-                     module_name=self._module_name,
-                     connect_params=self._connect_params,
-                     cursor_params=self._cursor_params):
-            if params is NO_ARG:
-                return self.__wrapped__.execute(sql)
-            else:
-                return self.__wrapped__.execute(sql, params)
-
-    def executemany(self, sql, seq_of_parameters):
-        with db_span(sql_statement=sql, sql_parameters=seq_of_parameters,
-                     module_name=self._module_name,
-                     connect_params=self._connect_params,
-                     cursor_params=self._cursor_params):
-            return self.__wrapped__.executemany(sql, seq_of_parameters)
-
-    def callproc(self, proc_name, params=NO_ARG):
-        with db_span(sql_statement='sproc:%s' % proc_name,
-                     sql_parameters=params if params is not NO_ARG else None,
-                     module_name=self._module_name,
-                     connect_params=self._connect_params,
-                     cursor_params=self._cursor_params):
-            if params is NO_ARG:
-                return self.__wrapped__.callproc(proc_name)
-            else:
-                return self.__wrapped__.callproc(proc_name, params)
