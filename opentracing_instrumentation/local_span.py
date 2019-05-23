@@ -24,6 +24,16 @@ import contextlib2
 import tornado.concurrent
 from . import get_current_span, span_in_stack_context, utils
 
+try:
+    import asyncio
+    _ASYNCIO = True
+except Exception:
+    _ASYNCIO = False
+
+
+def is_asyncio_coroutine(func):
+    return False if not _ASYNCIO else asyncio.iscoroutine(func)
+
 
 def func_span(func, tags=None, require_active_trace=False):
     """
@@ -128,10 +138,16 @@ def traced_function(func=None, name=None, on_start=None,
         with span_in_stack_context(span) as deactivate_cb:
             try:
                 res = func(*args, **kwargs)
+                is_tornado = tornado.concurrent.is_future(res)
+                is_asyncio = is_asyncio_coroutine(res)
+                if is_asyncio:
+                    task = asyncio.create_task(res)
+                else:
+                    task = res
                 # Tornado co-routines usually return futures, so we must wait
                 # until the future is completed, in order to accurately
                 # capture the function's execution time.
-                if tornado.concurrent.is_future(res):
+                if is_tornado or is_asyncio:
                     def done_callback(future):
                         deactivate_cb()
                         exception = future.exception()
@@ -139,14 +155,14 @@ def traced_function(func=None, name=None, on_start=None,
                             span.log(event='exception', payload=exception)
                             span.set_tag('error', 'true')
                         span.finish()
-                    if res.done():
+                    if task.done():
                         done_callback(res)
                     else:
-                        res.add_done_callback(done_callback)
+                        task.add_done_callback(done_callback)
                 else:
                     deactivate_cb()
                     span.finish()
-                return res
+                return task
             except Exception as e:
                 deactivate_cb()
                 span.log(event='exception', payload=e)
