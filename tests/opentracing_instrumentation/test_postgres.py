@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
+from inspect import isfunction
 import mock
 import psycopg2 as psycopg2_client
 import pytest
@@ -145,18 +145,29 @@ def test_install_patches_skip(factory_mock, *mocks):
 
 
 @pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
-@pytest.mark.parametrize('sql_object', (str, sql.SQL, sql.Composed))
-def test_execute_sql(tracer, engine, session, connection, sql_object):
+@pytest.mark.parametrize('query', [
+    # plain string
+    '''SELECT %s;''',
+    # Composed
+    sql.Composed([sql.SQL('''SELECT %s;''')]),
+    # Identifier
+    sql.SQL('''SELECT %s FROM {} LIMIT 1;''').format(
+        sql.Identifier('pg_catalog', 'pg_database')
+    ),
+    # Literal
+    sql.SQL('''SELECT {}''').format(sql.Literal('foobar')),
+    # Placeholder
+    sql.SQL('''SELECT {}''').format(sql.Placeholder())
+], ids=('str', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
+def test_execute_sql(tracer, engine, session, connection, query):
+
+    # Check that executing with objects of ``sql.Composable`` subtypes doesn't
+    # raise any exceptions.
+
     metadata.create_all(engine)
     user1 = User(name='user1', fullname='User 1', password='password')
     session.add(user1)
-    with tracer.start_active_span('test') as scope:
-        trace_id = str(scope.span.context.trace_id)
+    with tracer.start_active_span('test'):
         cur = connection.cursor()
-        query = '''SELECT %s;'''
-        if sql_object is sql.SQL:
-            query = sql_object(query)
-        if sql_object is sql.Composed:
-            query = sql_object([sql.SQL(query)])
-        cur.execute(query, (trace_id, ))
-        assert cur.fetchall() == [(trace_id, )]
+        cur.execute(query, ('foobar', ))
+        assert cur.fetchall() == [('foobar', )]
