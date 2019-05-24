@@ -1,3 +1,4 @@
+# coding: utf-8
 # Copyright (c) 2018,2019 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -17,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from inspect import isfunction
 import mock
 import psycopg2 as psycopg2_client
 import pytest
@@ -148,6 +148,8 @@ def test_install_patches_skip(factory_mock, *mocks):
 @pytest.mark.parametrize('query', [
     # plain string
     '''SELECT %s;''',
+    # Unicode
+    u'''SELECT %s; -- привет''',
     # Composed
     sql.Composed([sql.SQL('''SELECT %s;''')]),
     # Identifier
@@ -158,7 +160,7 @@ def test_install_patches_skip(factory_mock, *mocks):
     sql.SQL('''SELECT {}''').format(sql.Literal('foobar')),
     # Placeholder
     sql.SQL('''SELECT {}''').format(sql.Placeholder())
-], ids=('str', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
+], ids=('str', 'unicode', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
 def test_execute_sql(tracer, engine, session, connection, query):
 
     # Check that executing with objects of ``sql.Composable`` subtypes doesn't

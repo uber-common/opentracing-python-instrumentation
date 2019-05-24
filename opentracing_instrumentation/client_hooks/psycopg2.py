@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
+from psycopg2.sql import Composable
 from ._dbapi2 import ContextManagerConnectionWrapper as ConnectionWrapper
 from ._dbapi2 import ConnectionFactory, CursorWrapper, NO_ARG
 from ._singleton import singleton
@@ -41,7 +42,7 @@ class Psycopg2CursorClass(CursorWrapper):
     executing.
     """
     def execute(self, sql, params=NO_ARG):
-        if not isinstance(sql, str):
+        if isinstance(sql, Composable):
             sql = sql.as_string(self)
         return super(Psycopg2CursorClass, self).execute(sql, params)
 
