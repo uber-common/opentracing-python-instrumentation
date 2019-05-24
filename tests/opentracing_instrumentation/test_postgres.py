@@ -161,14 +161,12 @@ def test_install_patches_skip(factory_mock, *mocks):
     # Placeholder
     sql.SQL('''SELECT {}''').format(sql.Placeholder())
 ], ids=('str', 'unicode', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
-def test_execute_sql(tracer, engine, session, connection, query):
+def test_execute_sql(tracer, engine, connection, query):
 
     # Check that executing with objects of ``sql.Composable`` subtypes doesn't
     # raise any exceptions.
 
     metadata.create_all(engine)
-    user1 = User(name='user1', fullname='User 1', password='password')
-    session.add(user1)
     with tracer.start_active_span('test'):
         cur = connection.cursor()
         cur.execute(query, ('foobar', ))
