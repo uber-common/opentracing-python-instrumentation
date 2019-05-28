@@ -145,6 +145,7 @@ def test_install_patches_skip(factory_mock, *mocks):
 
 
 @pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
+@pytest.mark.parametrize('method', ('execute', 'executemany', ))
 @pytest.mark.parametrize('query', [
     # plain string
     '''SELECT %s;''',
@@ -161,7 +162,7 @@ def test_install_patches_skip(factory_mock, *mocks):
     # Placeholder
     sql.SQL('''SELECT {}''').format(sql.Placeholder())
 ], ids=('str', 'unicode', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
-def test_execute_sql(tracer, engine, connection, query):
+def test_execute_sql(tracer, engine, connection, method, query):
 
     # Check that executing with objects of ``sql.Composable`` subtypes doesn't
     # raise any exceptions.
@@ -169,5 +170,10 @@ def test_execute_sql(tracer, engine, connection, query):
     metadata.create_all(engine)
     with tracer.start_active_span('test'):
         cur = connection.cursor()
-        cur.execute(query, ('foobar', ))
-        assert cur.fetchall() == [('foobar', )]
+        params = ('foobar', )
+        if method == 'executemany':
+            params = [params]
+        getattr(cur, method)(query, params)
+        last_span = tracer.recorder.get_spans()[-1]
+        assert last_span.operation_name == 'psycopg2:SELECT'
+        assert last_span.tags['sql.params'] == params

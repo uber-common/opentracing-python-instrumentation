@@ -35,21 +35,23 @@ else:
     _psycopg2_extensions_quote_ident = psycopg2.extensions.quote_ident
 
 
-class Psycopg2CursorClass(CursorWrapper):
+class Psycopg2CursorWrapper(CursorWrapper):
     """
-    Psycopg2 accept not only string as sql statment, but instances of
+    Psycopg2 accept not only string as sql statement, but instances of
     ``psycopg2.sql.Composable`` that should be represented as string before the
     executing.
     """
     def execute(self, sql, params=NO_ARG):
         if isinstance(sql, Composable):
             sql = sql.as_string(self)
-        return super(Psycopg2CursorClass, self).execute(sql, params)
+        return super(Psycopg2CursorWrapper, self).execute(sql, params)
 
-
-class Psycopg2ConnectionWrapper(ConnectionWrapper):
-
-    cursor_cls = Psycopg2CursorClass
+    def executemany(self, sql, seq_of_parameters):
+        if isinstance(sql, Composable):
+            sql = sql.as_string(self)
+        return super(Psycopg2CursorWrapper, self).executemany(
+            sql, seq_of_parameters
+        )
 
 
 @singleton
@@ -74,7 +76,8 @@ def install_patches():
 
     factory = ConnectionFactory(connect_func=psycopg2.connect,
                                 module_name='psycopg2',
-                                conn_wrapper_ctor=Psycopg2ConnectionWrapper)
+                                conn_wrapper_ctor=ConnectionWrapper,
+                                cursor_wrapper=Psycopg2CursorWrapper)
     setattr(psycopg2, 'connect', factory)
     if hasattr(psycopg2, 'Connect'):
         setattr(psycopg2, 'Connect', factory)

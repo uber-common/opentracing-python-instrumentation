@@ -129,7 +129,8 @@ class ConnectionFactory(object):
     for the actual connection.
     """
 
-    def __init__(self, connect_func, module_name, conn_wrapper_ctor=None):
+    def __init__(self, connect_func, module_name, conn_wrapper_ctor=None,
+                 cursor_wrapper=CursorWrapper):
         self._connect_func = connect_func
         self._module_name = module_name
         if hasattr(connect_func, '__name__'):
@@ -139,6 +140,7 @@ class ConnectionFactory(object):
             self._connect_func_name = '%s:%s' % (module_name, connect_func)
         self._wrapper_ctor = conn_wrapper_ctor \
             if conn_wrapper_ctor is not None else ConnectionWrapper
+        self._cursor_wrapper = cursor_wrapper
 
     def __call__(self, *args, **kwargs):
         safe_kwargs = kwargs
@@ -155,21 +157,22 @@ class ConnectionFactory(object):
             return self._wrapper_ctor(
                 connection=self._connect_func(*args, **kwargs),
                 module_name=self._module_name,
-                connect_params=connect_params)
+                connect_params=connect_params,
+                cursor_wrapper=self._cursor_wrapper)
 
 
 class ConnectionWrapper(wrapt.ObjectProxy):
-    __slots__ = ('_module_name', '_connect_params')
+    __slots__ = ('_module_name', '_connect_params', '_cursor_wrapper')
 
-    cursor_cls = CursorWrapper
-
-    def __init__(self, connection, module_name, connect_params):
+    def __init__(self, connection, module_name, connect_params,
+                 cursor_wrapper):
         super(ConnectionWrapper, self).__init__(wrapped=connection)
         self._module_name = module_name
         self._connect_params = connect_params
+        self._cursor_wrapper = cursor_wrapper
 
     def cursor(self, *args, **kwargs):
-        return self.cursor_cls(
+        return self._cursor_wrapper(
             cursor=self.__wrapped__.cursor(*args, **kwargs),
             module_name=self._module_name,
             connect_params=self._connect_params,
@@ -200,11 +203,13 @@ class ContextManagerConnectionWrapper(ConnectionWrapper):
             cursor.execute(...)
     """
 
-    def __init__(self, connection, module_name, connect_params):
+    def __init__(self, connection, module_name, connect_params,
+                 cursor_wrapper):
         super(ContextManagerConnectionWrapper, self).__init__(
             connection=connection,
             module_name=module_name,
-            connect_params=connect_params
+            connect_params=connect_params,
+            cursor_wrapper=cursor_wrapper
         )
 
     def __getattr__(self, name):
