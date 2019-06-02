@@ -20,6 +20,7 @@ The module name is `opentracing_instrumentation`.
 ### Supported client frameworks
 
 The following libraries are instrumented for tracing in this module:
+ * [boto3](https://github.com/boto/boto3) — AWS SDK for Python
  * `urllib2`
  * `requests`
  * `SQLAlchemy`
@@ -217,6 +218,11 @@ install_all_patches()
 ``` 
 
 ## Development
+
+`PostgreSQL`, `Redis` and `DynamoDB` are required for certain tests.
+```bash
+docker-compose up -d
+```
 
 To prepare a development environment please execute the following commands.
 ```bash
