@@ -81,109 +81,6 @@ def db_span(sql_statement,
     )
 
 
-class ConnectionFactory(object):
-    """
-    Wraps connect_func of the DB API v2 module by creating a wrapper object
-    for the actual connection.
-    """
-
-    def __init__(self, connect_func, module_name, conn_wrapper_ctor=None):
-        self._connect_func = connect_func
-        self._module_name = module_name
-        if hasattr(connect_func, '__name__'):
-            self._connect_func_name = '%s:%s' % (module_name,
-                                                 connect_func.__name__)
-        else:
-            self._connect_func_name = '%s:%s' % (module_name, connect_func)
-        self._wrapper_ctor = conn_wrapper_ctor \
-            if conn_wrapper_ctor is not None else ConnectionWrapper
-
-    def __call__(self, *args, **kwargs):
-        safe_kwargs = kwargs
-        if 'passwd' in kwargs or 'password' in kwargs or 'conv' in kwargs:
-            safe_kwargs = dict(kwargs)
-            if 'passwd' in safe_kwargs:
-                del safe_kwargs['passwd']
-            if 'password' in safe_kwargs:
-                del safe_kwargs['password']
-            if 'conv' in safe_kwargs:  # don't log conversion functions
-                del safe_kwargs['conv']
-        connect_params = (args, safe_kwargs) if args or safe_kwargs else None
-        with func_span(self._connect_func_name):
-            return self._wrapper_ctor(
-                connection=self._connect_func(*args, **kwargs),
-                module_name=self._module_name,
-                connect_params=connect_params)
-
-
-class ConnectionWrapper(wrapt.ObjectProxy):
-    __slots__ = ('_module_name', '_connect_params')
-
-    def __init__(self, connection, module_name, connect_params):
-        super(ConnectionWrapper, self).__init__(wrapped=connection)
-        self._module_name = module_name
-        self._connect_params = connect_params
-
-    def cursor(self, *args, **kwargs):
-        return CursorWrapper(
-            cursor=self.__wrapped__.cursor(*args, **kwargs),
-            module_name=self._module_name,
-            connect_params=self._connect_params,
-            cursor_params=(args, kwargs) if args or kwargs else None)
-
-    def begin(self):
-        with db_span(sql_statement=_BEGIN, module_name=self._module_name):
-            return self.__wrapped__.begin()
-
-    def commit(self):
-        with db_span(sql_statement=_COMMIT, module_name=self._module_name):
-            return self.__wrapped__.commit()
-
-    def rollback(self):
-        with db_span(sql_statement=_ROLLBACK, module_name=self._module_name):
-            return self.__wrapped__.rollback()
-
-
-class ContextManagerConnectionWrapper(ConnectionWrapper):
-    """
-    Extends ConnectionWrapper by implementing `__enter__` and `__exit__`
-    methods of the context manager API, for connections that can be used
-    in as context managers to control the transactions, e.g.
-
-    .. code-block:: python
-
-        with MySQLdb.connect(...) as cursor:
-            cursor.execute(...)
-    """
-
-    def __init__(self, connection, module_name, connect_params):
-        super(ContextManagerConnectionWrapper, self).__init__(
-            connection=connection,
-            module_name=module_name,
-            connect_params=connect_params
-        )
-
-    def __getattr__(self, name):
-        # Tip suggested here:
-        # https://gist.github.com/mjallday/3d4c92e7e6805af1e024.
-        if name == '_sqla_unwrap':
-            return self.__wrapped__
-        return super(ContextManagerConnectionWrapper, self).__getattr__(name)
-
-    def __enter__(self):
-        with func_span('%s:begin_transaction' % self._module_name):
-            cursor = self.__wrapped__.__enter__()
-
-        return CursorWrapper(cursor=cursor,
-                             module_name=self._module_name,
-                             connect_params=self._connect_params)
-
-    def __exit__(self, exc, value, tb):
-        outcome = _COMMIT if exc is None else _ROLLBACK
-        with db_span(sql_statement=outcome, module_name=self._module_name):
-            return self.__wrapped__.__exit__(exc, value, tb)
-
-
 class CursorWrapper(wrapt.ObjectProxy):
     __slots__ = ('_module_name', '_connect_params', '_cursor_params')
 
@@ -224,3 +121,113 @@ class CursorWrapper(wrapt.ObjectProxy):
                 return self.__wrapped__.callproc(proc_name)
             else:
                 return self.__wrapped__.callproc(proc_name, params)
+
+
+class ConnectionFactory(object):
+    """
+    Wraps connect_func of the DB API v2 module by creating a wrapper object
+    for the actual connection.
+    """
+
+    def __init__(self, connect_func, module_name, conn_wrapper_ctor=None,
+                 cursor_wrapper=CursorWrapper):
+        self._connect_func = connect_func
+        self._module_name = module_name
+        if hasattr(connect_func, '__name__'):
+            self._connect_func_name = '%s:%s' % (module_name,
+                                                 connect_func.__name__)
+        else:
+            self._connect_func_name = '%s:%s' % (module_name, connect_func)
+        self._wrapper_ctor = conn_wrapper_ctor \
+            if conn_wrapper_ctor is not None else ConnectionWrapper
+        self._cursor_wrapper = cursor_wrapper
+
+    def __call__(self, *args, **kwargs):
+        safe_kwargs = kwargs
+        if 'passwd' in kwargs or 'password' in kwargs or 'conv' in kwargs:
+            safe_kwargs = dict(kwargs)
+            if 'passwd' in safe_kwargs:
+                del safe_kwargs['passwd']
+            if 'password' in safe_kwargs:
+                del safe_kwargs['password']
+            if 'conv' in safe_kwargs:  # don't log conversion functions
+                del safe_kwargs['conv']
+        connect_params = (args, safe_kwargs) if args or safe_kwargs else None
+        with func_span(self._connect_func_name):
+            return self._wrapper_ctor(
+                connection=self._connect_func(*args, **kwargs),
+                module_name=self._module_name,
+                connect_params=connect_params,
+                cursor_wrapper=self._cursor_wrapper)
+
+
+class ConnectionWrapper(wrapt.ObjectProxy):
+    __slots__ = ('_module_name', '_connect_params', '_cursor_wrapper')
+
+    def __init__(self, connection, module_name, connect_params,
+                 cursor_wrapper):
+        super(ConnectionWrapper, self).__init__(wrapped=connection)
+        self._module_name = module_name
+        self._connect_params = connect_params
+        self._cursor_wrapper = cursor_wrapper
+
+    def cursor(self, *args, **kwargs):
+        return self._cursor_wrapper(
+            cursor=self.__wrapped__.cursor(*args, **kwargs),
+            module_name=self._module_name,
+            connect_params=self._connect_params,
+            cursor_params=(args, kwargs) if args or kwargs else None)
+
+    def begin(self):
+        with db_span(sql_statement=_BEGIN, module_name=self._module_name):
+            return self.__wrapped__.begin()
+
+    def commit(self):
+        with db_span(sql_statement=_COMMIT, module_name=self._module_name):
+            return self.__wrapped__.commit()
+
+    def rollback(self):
+        with db_span(sql_statement=_ROLLBACK, module_name=self._module_name):
+            return self.__wrapped__.rollback()
+
+
+class ContextManagerConnectionWrapper(ConnectionWrapper):
+    """
+    Extends ConnectionWrapper by implementing `__enter__` and `__exit__`
+    methods of the context manager API, for connections that can be used
+    in as context managers to control the transactions, e.g.
+
+    .. code-block:: python
+
+        with MySQLdb.connect(...) as cursor:
+            cursor.execute(...)
+    """
+
+    def __init__(self, connection, module_name, connect_params,
+                 cursor_wrapper):
+        super(ContextManagerConnectionWrapper, self).__init__(
+            connection=connection,
+            module_name=module_name,
+            connect_params=connect_params,
+            cursor_wrapper=cursor_wrapper
+        )
+
+    def __getattr__(self, name):
+        # Tip suggested here:
+        # https://gist.github.com/mjallday/3d4c92e7e6805af1e024.
+        if name == '_sqla_unwrap':
+            return self.__wrapped__
+        return super(ContextManagerConnectionWrapper, self).__getattr__(name)
+
+    def __enter__(self):
+        with func_span('%s:begin_transaction' % self._module_name):
+            cursor = self.__wrapped__.__enter__()
+
+        return CursorWrapper(cursor=cursor,
+                             module_name=self._module_name,
+                             connect_params=self._connect_params)
+
+    def __exit__(self, exc, value, tb):
+        outcome = _COMMIT if exc is None else _ROLLBACK
+        with db_span(sql_statement=outcome, module_name=self._module_name):
+            return self.__wrapped__.__exit__(exc, value, tb)

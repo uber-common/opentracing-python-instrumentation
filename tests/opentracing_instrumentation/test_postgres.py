@@ -1,3 +1,4 @@
+# coding: utf-8
 # Copyright (c) 2018,2019 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -17,11 +18,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
 import mock
 import psycopg2 as psycopg2_client
 import pytest
-from psycopg2 import extensions as pg_extensions
+from psycopg2 import extensions as pg_extensions, sql
 from sqlalchemy import (
     Column,
     Integer,
@@ -109,7 +109,8 @@ def test_db(tracer, engine, session):
 def test_connection_proxy(connection):
     assert isinstance(connection, psycopg2.ConnectionWrapper)
 
-    # Test that connection properties are proxied by ContextManagerConnectionWrapper
+    # Test that connection properties are proxied by
+    # ContextManagerConnectionWrapper
     assert connection.closed == 0
 
 
@@ -141,3 +142,38 @@ def test_install_patches_skip(factory_mock, *mocks):
     psycopg2.install_patches.reset()
     psycopg2.install_patches()
     factory_mock.assert_not_called()
+
+
+@pytest.mark.skipif(not is_postgres_running(), reason=SKIP_REASON)
+@pytest.mark.parametrize('method', ('execute', 'executemany', ))
+@pytest.mark.parametrize('query', [
+    # plain string
+    '''SELECT %s;''',
+    # Unicode
+    u'''SELECT %s; -- привет''',
+    # Composed
+    sql.Composed([sql.SQL('''SELECT %s;''')]),
+    # Identifier
+    sql.SQL('''SELECT %s FROM {} LIMIT 1;''').format(
+        sql.Identifier('pg_catalog', 'pg_database')
+    ),
+    # Literal
+    sql.SQL('''SELECT {}''').format(sql.Literal('foobar')),
+    # Placeholder
+    sql.SQL('''SELECT {}''').format(sql.Placeholder())
+], ids=('str', 'unicode', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
+def test_execute_sql(tracer, engine, connection, method, query):
+
+    # Check that executing with objects of ``sql.Composable`` subtypes doesn't
+    # raise any exceptions.
+
+    metadata.create_all(engine)
+    with tracer.start_active_span('test'):
+        cur = connection.cursor()
+        params = ('foobar', )
+        if method == 'executemany':
+            params = [params]
+        getattr(cur, method)(query, params)
+        last_span = tracer.recorder.get_spans()[-1]
+        assert last_span.operation_name == 'psycopg2:SELECT'
+        assert last_span.tags['sql.params'] == params
