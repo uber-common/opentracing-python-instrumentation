@@ -69,7 +69,7 @@ def install_patches():
                 # cannot use super here, this is an old style class
                 fileobj = urllib.FancyURLopener.open(self, fullurl, data)
                 if fileobj.getcode() is not None:
-                    span.set_tag('http.status_code', fileobj.getcode())
+                    span.set_tag(ext_tags.HTTP_STATUS_CODE, fileobj.getcode())
 
             return fileobj
 
