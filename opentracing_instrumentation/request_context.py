@@ -178,6 +178,22 @@ def span_in_context(span):
     return opentracing.tracer.scope_manager.activate(span, False)
 
 
+class _DummyStackContext(object):
+    """
+    Stack context that will be used in `span_in_stack_context` when tracer
+    scope manager is not `TornadoScopeManager`.
+    """
+
+    def __enter__(self):
+        self._current_context = opentracing.tracer.scope_manager.active
+        return lambda: None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if opentracing.tracer.scope_manager.active:
+            opentracing.tracer.scope_manager.active.close()
+        assert self._current_context == opentracing.tracer.scope_manager.active
+
+
 def span_in_stack_context(span):
     """
     Create Tornado's StackContext that stores the given span in the
@@ -208,14 +224,17 @@ def span_in_stack_context(span):
         Return StackContext that wraps the request context.
     """
 
-    if not isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
-        raise RuntimeError('scope_manager is not TornadoScopeManager')
-
+    if isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
+        # Use custom Tornado stack context that correctly stores and restores
+        # coroutine context.
+        context = tracer_stack_context()
+    else:
+        # Fallback to "dummy" context if it's not a `TornadoScopeManager` which
+        # will restore previous scope after exit.
+        context = _DummyStackContext()
     # Enter the newly created stack context so we have
     # storage available for Span activation.
-    context = tracer_stack_context()
     entered_context = _TracerEnteredStackContext(context)
-
     if span is None:
         return entered_context
 
