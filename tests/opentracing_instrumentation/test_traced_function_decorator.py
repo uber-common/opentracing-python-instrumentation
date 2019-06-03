@@ -279,7 +279,7 @@ class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
                         tags=None)
                     assert child.set_tag.call_count == 0
 
-                raise tornado.gen.Return(1)
+            raise tornado.gen.Return(1)
 
         yield run_coroutine_with_span(span=parent, coro=run)
 
@@ -301,13 +301,13 @@ class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
                         func, 'somewhere', call_site_tag='somewhere')
                     assert r == 'oh yeah'
                     start_child.assert_called_once_with(
-                        operation_name='regular_with_hook',
+                        operation_name=func,
                         child_of=parent.context,
                         tags=None)
                     child.set_tag.assert_called_once_with(
                         'call_site_tag', 'somewhere')
 
-                raise tornado.gen.Return(1)
+            raise tornado.gen.Return(1)
 
         yield run_coroutine_with_span(span=parent, coro=run)
 
