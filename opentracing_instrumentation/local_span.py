@@ -22,7 +22,9 @@ from builtins import str
 import functools
 import contextlib2
 import tornado.concurrent
-from . import get_current_span, span_in_stack_context, utils
+import opentracing
+from opentracing.scope_managers.tornado import TornadoScopeManager
+from . import get_current_span, span_in_stack_context, span_in_context, utils
 
 
 def func_span(func, tags=None, require_active_trace=False):
@@ -59,6 +61,31 @@ def func_span(func, tags=None, require_active_trace=False):
     operation_name = str(func)
     return utils.start_child_span(
         operation_name=operation_name, parent=current_span, tags=tags)
+
+
+class _DummyStackContext(object):
+    """
+    Stack context that restores previous scope after exit.
+    Will be returned by helper `_span_in_stack_context` when tracer scope
+    manager is not `TornadoScopeManager`.
+    """
+    def __init__(self, context):
+        self._context = context
+
+    def __enter__(self):
+        # Need for compatibility with `span_in_stack_context`.
+        return lambda: None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._context:
+            self._context.close()
+
+
+def _span_in_stack_context(span):
+    if isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
+        return span_in_stack_context(span)
+    else:
+        return _DummyStackContext(span_in_context(span))
 
 
 def traced_function(func=None, name=None, on_start=None,
@@ -125,7 +152,7 @@ def traced_function(func=None, name=None, on_start=None,
         # because there are scenarios when it gets retained forever, for
         # example when a Periodic Callback is scheduled lazily while in the
         # scope of a tracing StackContext.
-        with span_in_stack_context(span) as deactivate_cb:
+        with _span_in_stack_context(span) as deactivate_cb:
             try:
                 res = func(*args, **kwargs)
                 # Tornado co-routines usually return futures, so we must wait

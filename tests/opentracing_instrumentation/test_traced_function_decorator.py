@@ -66,6 +66,11 @@ class Client(object):
     def regular_require_active_trace(self, param):
         return self._func(param)
 
+    @traced_function()
+    def regular_with_nested(self, param):
+        self.regular(param)
+        self.regular_with_name(param)
+
     def _coro(self, param):
         return tornado.gen.Return(self._func(param))
 
@@ -199,6 +204,48 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
             r = self.client.regular_require_active_trace(123)
             assert r == 'oh yeah'
             assert start.call_count == 0
+
+    def test_nested_functions(self):
+        tracer = opentracing.tracer
+
+        parent = opentracing.tracer.start_span('hello')
+        with opentracing.tracer.scope_manager.activate(parent, True) as scope:
+            self.client.regular_with_nested(123)
+            spans = tracer.finished_spans()
+            self.assertEqual(len(spans), 3)
+            root = spans[2]
+            self.assertEqual(root.operation_name, 'regular_with_nested')
+
+            self.assertEqual(spans[0].operation_name, 'regular')
+            self.assertEqual(spans[0].parent_id, root.context.span_id)
+            self.assertEqual(spans[1].operation_name, 'some_name')
+            self.assertEqual(spans[1].parent_id, root.context.span_id)
+
+            # Check parent context has been restored.
+            self.assertEqual(tracer.scope_manager.active, scope)
+
+    def test_nested_functions_with_exception(self):
+        tracer = opentracing.tracer
+
+        parent = opentracing.tracer.start_span('hello')
+        with opentracing.tracer.scope_manager.activate(parent, True) as scope:
+            # First nested function (`regular`) raises Exception.
+            with self.assertRaises(AssertionError):
+                self.client.regular_with_nested(999)
+            spans = tracer.finished_spans()
+            # Second nested function has not been invoked.
+            self.assertEqual(len(spans), 2)
+            root = spans[1]
+            self.assertEqual(root.operation_name, 'regular_with_nested')
+
+            self.assertEqual(spans[0].operation_name, 'regular')
+            self.assertEqual(spans[0].parent_id, root.context.span_id)
+            self.assertEqual(len(spans[0].tags), 1)
+            self.assertEqual(spans[0].tags['error'], 'true')
+            self.assertEqual(spans[0].logs[0].key_values['event'], 'exception')
+
+            # Check parent context has been restored.
+            self.assertEqual(tracer.scope_manager.active, scope)
 
 
 class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
