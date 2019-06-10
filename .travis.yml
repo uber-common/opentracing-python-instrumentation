@@ -1,25 +1,37 @@
 dist: xenial
+addons:
+  apt:
+    packages:
+      - rabbitmq-server
 sudo: true
 
 language: python
+python:
+  - '2.7'
+  - '3.4'
+  - '3.5'
+  - '3.6'
+
+env:
+  matrix:
+    - CELERY=3
+    - CELERY=4
 
 matrix:
   include:
-  - python: '2.7'
-    env: COVER=1
-  - python: '3.4'
-    dist: trusty
-  - python: '3.5'
-  - python: '3.6'
   - python: '3.7'
+    env:
+      CELERY=4 COVER=1
 
 install:
   - make install-ci
+  - pip install celery~=${CELERY}.0
 
 services:
   - docker
   - postgresql
-  - redis
+  - rabbitmq
+  - redis-server
 
 before_script:
   - docker-compose up -d dynamodb

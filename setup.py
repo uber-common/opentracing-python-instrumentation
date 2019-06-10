@@ -43,6 +43,7 @@ setup(
         'tests': [
             'boto3',
             'botocore',
+            'celery',
             'coveralls',
             'doubles',
             'flake8',
