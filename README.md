@@ -21,6 +21,7 @@ The module name is `opentracing_instrumentation`.
 
 The following libraries are instrumented for tracing in this module:
  * [boto3](https://github.com/boto/boto3) — AWS SDK for Python
+ * [Celery](https://github.com/celery/celery) — Distributed Task Queue
  * `urllib2`
  * `requests`
  * `SQLAlchemy`
@@ -219,7 +220,8 @@ install_all_patches()
 
 ## Development
 
-`PostgreSQL`, `Redis` and `DynamoDB` are required for certain tests.
+`PostgreSQL`, `RabbitMQ`, `Redis`, and `DynamoDB`
+are required for certain tests.
 ```bash
 docker-compose up -d
 ```
