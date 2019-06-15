@@ -19,9 +19,11 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-from builtins import object
+
 import mock
+import pytest
 import unittest
+
 import opentracing
 from opentracing.mocktracer import MockTracer
 from opentracing.scope_managers.tornado import TornadoScopeManager
@@ -121,33 +123,28 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
         parent = opentracing.tracer.start_span('hello')
 
         with opentracing.tracer.scope_manager.activate(parent, True) as scope:
-            child = mock.MagicMock()
+            child = mock.Mock()
             # verify start_child is called with actual function name
             with patch_object(opentracing.tracer, 'start_span',
                               return_value=child) as start_child:
-                child.set_tag = mock.MagicMock()
-                child.error = mock.MagicMock()
-                child.finish = mock.MagicMock()
                 r = self.client.regular(123)
                 start_child.assert_called_once_with(
                     operation_name='regular',
                     child_of=parent.context,
                     tags=None)
-                assert child.set_tag.call_count == 0
-                assert child.error.call_count == 0
-                assert child.finish.call_count == 1
+                child.set_tag.assert_not_called()
+                child.error.assert_not_called()
+                child.finish.assert_called_once()
                 assert r == 'oh yeah'
 
             # verify span.error() is called on exception
-            child = mock.MagicMock()
+            child = mock.Mock()
             with patch_object(opentracing.tracer, 'start_span') as start_child:
                 start_child.return_value = child
-                child.error = mock.MagicMock()
-                child.finish = mock.MagicMock()
-                with self.assertRaises(AssertionError):
+                with pytest.raises(AssertionError):
                     self.client.regular(999)
-                assert child.log.call_count == 1
-                assert child.finish.call_count == 1
+                child.log.assert_called_once()
+                child.finish.assert_called_once()
         scope.close()
 
     def test_decorator_with_name(self):
@@ -155,17 +152,16 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
         parent = opentracing.tracer.start_span('hello')
 
         with opentracing.tracer.scope_manager.activate(parent, True) as scope:
-            child = mock.MagicMock()
+            child = mock.Mock()
             with patch_object(opentracing.tracer, 'start_span',
                               return_value=child) as start_child:
-                child.set_tag = mock.MagicMock()
                 r = self.client.regular_with_name(123)
                 assert r == 'oh yeah'
                 start_child.assert_called_once_with(
                     operation_name='some_name',  # overridden name
                     child_of=parent.context,
                     tags=None)
-                assert child.set_tag.call_count == 0
+                child.set_tag.assert_not_called()
             parent.finish()
         scope.close()
 
@@ -175,11 +171,9 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
 
         with opentracing.tracer.scope_manager.activate(parent, True) as scope:
             # verify call_size_tag argument is extracted and added as tag
-            child = mock.MagicMock()
-            with patch_object(opentracing.tracer, 'start_span') \
-                    as start_child:
+            child = mock.Mock()
+            with patch_object(opentracing.tracer, 'start_span') as start_child:
                 start_child.return_value = child
-                child.set_tag = mock.MagicMock()
                 r = self.client.regular_with_hook(
                     'somewhere', call_site_tag='somewhere')
                 assert r == 'oh yeah'
@@ -203,7 +197,7 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
         with patch_object(opentracing.tracer, 'start_span') as start:
             r = self.client.regular_require_active_trace(123)
             assert r == 'oh yeah'
-            assert start.call_count == 0
+            start.assert_not_called()
 
     def test_nested_functions(self):
         tracer = opentracing.tracer
@@ -212,17 +206,17 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
         with opentracing.tracer.scope_manager.activate(parent, True) as scope:
             self.client.regular_with_nested(123)
             spans = tracer.finished_spans()
-            self.assertEqual(len(spans), 3)
+            assert len(spans) == 3
             root = spans[2]
-            self.assertEqual(root.operation_name, 'regular_with_nested')
+            assert root.operation_name == 'regular_with_nested'
 
-            self.assertEqual(spans[0].operation_name, 'regular')
-            self.assertEqual(spans[0].parent_id, root.context.span_id)
-            self.assertEqual(spans[1].operation_name, 'some_name')
-            self.assertEqual(spans[1].parent_id, root.context.span_id)
+            assert spans[0].operation_name == 'regular'
+            assert spans[0].parent_id == root.context.span_id
+            assert spans[1].operation_name == 'some_name'
+            assert spans[1].parent_id == root.context.span_id
 
             # Check parent context has been restored.
-            self.assertEqual(tracer.scope_manager.active, scope)
+            assert tracer.scope_manager.active is scope
 
     def test_nested_functions_with_exception(self):
         tracer = opentracing.tracer
@@ -230,22 +224,22 @@ class TracedRegularFunctionDecoratorTest(PrepareMixin, unittest.TestCase):
         parent = opentracing.tracer.start_span('hello')
         with opentracing.tracer.scope_manager.activate(parent, True) as scope:
             # First nested function (`regular`) raises Exception.
-            with self.assertRaises(AssertionError):
+            with pytest.raises(AssertionError):
                 self.client.regular_with_nested(999)
             spans = tracer.finished_spans()
             # Second nested function has not been invoked.
-            self.assertEqual(len(spans), 2)
+            assert len(spans) == 2
             root = spans[1]
-            self.assertEqual(root.operation_name, 'regular_with_nested')
+            assert root.operation_name == 'regular_with_nested'
 
-            self.assertEqual(spans[0].operation_name, 'regular')
-            self.assertEqual(spans[0].parent_id, root.context.span_id)
-            self.assertEqual(len(spans[0].tags), 1)
-            self.assertEqual(spans[0].tags['error'], 'true')
-            self.assertEqual(spans[0].logs[0].key_values['event'], 'exception')
+            assert spans[0].operation_name == 'regular'
+            assert spans[0].parent_id == root.context.span_id
+            assert len(spans[0].tags) == 1
+            assert spans[0].tags['error'] == 'true'
+            assert spans[0].logs[0].key_values['event'] == 'exception'
 
             # Check parent context has been restored.
-            self.assertEqual(tracer.scope_manager.active, scope)
+            assert tracer.scope_manager.active is scope
 
 
 class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
@@ -272,34 +266,29 @@ class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
         def run():
             # test both co-routine and regular function
             for func in ('regular', 'coro', ):
-                child = mock.MagicMock()
+                child = mock.Mock()
                 # verify start_child is called with actual function name
                 with patch_object(opentracing.tracer, 'start_span',
                                   return_value=child) as start_child:
-                    child.set_tag = mock.MagicMock()
-                    child.error = mock.MagicMock()
-                    child.finish = mock.MagicMock()
                     r = yield self.call(func, 123)
                     start_child.assert_called_once_with(
                         operation_name=func,
                         child_of=parent.context,
                         tags=None)
-                    assert child.set_tag.call_count == 0
-                    assert child.error.call_count == 0
-                    assert child.finish.call_count == 1
+                    child.set_tag.assert_not_called()
+                    child.error.assert_not_called()
+                    child.finish.assert_called_once()
                     assert r == 'oh yeah'
 
                 # verify span.error() is called on exception
-                child = mock.MagicMock()
+                child = mock.Mock()
                 with patch_object(opentracing.tracer, 'start_span') \
                         as start_child:
                     start_child.return_value = child
-                    child.error = mock.MagicMock()
-                    child.finish = mock.MagicMock()
-                    with self.assertRaises(AssertionError):
+                    with pytest.raises(AssertionError):
                         yield self.call(func, 999)
-                    assert child.log.call_count == 1
-                    assert child.finish.call_count == 1
+                    child.log.assert_called_once()
+                    child.finish.assert_called_once()
 
             raise tornado.gen.Return(1)
 
@@ -314,17 +303,16 @@ class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
         def run():
             # verify start_span is called with overridden function name
             for func in ('regular_with_name', 'coro_with_name', ):
-                child = mock.MagicMock()
+                child = mock.Mock()
                 with patch_object(opentracing.tracer, 'start_span',
                                   return_value=child) as start_child:
-                    child.set_tag = mock.MagicMock()
                     r = yield self.call(func, 123)
                     assert r == 'oh yeah'
                     start_child.assert_called_once_with(
                         operation_name='some_name',  # overridden name
                         child_of=parent.context,
                         tags=None)
-                    assert child.set_tag.call_count == 0
+                    child.set_tag.assert_not_called()
 
             raise tornado.gen.Return(1)
 
@@ -339,11 +327,10 @@ class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
         def run():
             # verify call_size_tag argument is extracted and added as tag
             for func in ('regular_with_hook', 'coro_with_hook', ):
-                child = mock.MagicMock()
+                child = mock.Mock()
                 with patch_object(opentracing.tracer, 'start_span') \
                         as start_child:
                     start_child.return_value = child
-                    child.set_tag = mock.MagicMock()
                     r = yield self.call(
                         func, 'somewhere', call_site_tag='somewhere')
                     assert r == 'oh yeah'
@@ -376,7 +363,7 @@ class TracedCoroFunctionDecoratorTest(PrepareMixin, AsyncTestCase):
                 with patch_object(opentracing.tracer, 'start_span') as start:
                     r = yield self.call(func2, 123)
                     assert r == 'oh yeah'
-                    assert start.call_count == 0
+                    start.assert_not_called()
 
             raise tornado.gen.Return(1)
 
