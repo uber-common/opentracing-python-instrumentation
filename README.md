@@ -220,8 +220,8 @@ install_all_patches()
 
 ## Development
 
-`PostgreSQL`, `RabbitMQ`, `Redis`, and `DynamoDB`
-are required for certain tests.
+`PostgreSQL`, `RabbitMQ`, `Redis`, and `DynamoDB` are required for certain tests.
+
 ```bash
 docker-compose up -d
 ```

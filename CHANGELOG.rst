@@ -3,9 +3,16 @@
 History
 -------
 
-3.0.2 (unreleased)
+3.1.0 (2019-06-16)
 ------------------
 
+- Support non TornadoScopeManager in traced_function decorator (#86) <Vasilii Novikov>
+- Add support for Celery (#85) <Aliaksei Urbanski>
+- Add tags.HTTP_METHOD to before_request (#79) <Nicholas Amorim>
+- Using opentracing.ext in all hooks. (#78) <Nicholas Amorim>
+- Add support for boto3 (#77) <Aliaksei Urbanski>
+- Support Composable object as sql statement for psycopg2 (#82) <Vasilii Novikov>
+- Add support for Tornado 5 (#76) <Vasilii Novikov>
 - Fix compatibility with Peewee ORM (#72) <Aliaksei Urbanski>
 
 
