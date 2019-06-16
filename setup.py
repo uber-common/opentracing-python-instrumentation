@@ -41,10 +41,13 @@ setup(
     ],
     extras_require={
         'tests': [
+            # coveralls should be required before boto3
+            # to avoid dependency conflict for Python 2.7
+            'coveralls',
+
             'boto3',
             'botocore',
             'celery',
-            'coveralls',
             'doubles',
             'flake8',
             'flake8-quotes',
@@ -52,11 +55,7 @@ setup(
             'moto',
             'psycopg2-binary',
             'sqlalchemy>=1.2.0',
-
-            # pytest-tornado isn't compatible with pytest>=4.0.0,
-            # see https://github.com/eugeniy/pytest-tornado/pull/38
-            'pytest>=3.0.0,<4.0.0',
-
+            'pytest',
             'pytest-cov',
             'pytest-localserver',
             'pytest-mock',
