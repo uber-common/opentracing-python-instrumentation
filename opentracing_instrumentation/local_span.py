@@ -27,12 +27,12 @@ from . import get_current_span, span_in_stack_context, utils
 try:
     import asyncio
     _ASYNCIO = True
-except Exception:
+except ImportError:
     _ASYNCIO = False
 
 
 def is_asyncio_coroutine(func):
-    return False if not _ASYNCIO else asyncio.iscoroutine(func)
+    return _ASYNCIO and asyncio.iscoroutine(func)
 
 
 def func_span(func, tags=None, require_active_trace=False):
