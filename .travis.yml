@@ -49,3 +49,13 @@ script:
 
 after_success:
   if [ "$COVER" = "1" ]; then coveralls -v ; fi
+
+deploy:
+  provider: pypi
+  distributions: 'sdist bdist_wheel'
+  user: 'Your username'
+  password:
+    secure: 'Your encrypted password'
+  on:
+    tags: true
+    python: '3.7'
