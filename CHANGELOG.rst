@@ -3,10 +3,12 @@
 History
 -------
 
-3.1.1 (unreleased)
+3.1.1 (2019-07-05)
 ------------------
 
-- Nothing changed yet.
+- Set deploy username and password <Yuri Shkuro>
+- Add deploy section into .travis.yml (#94) <Aliaksei Urbanski>
+- Fix coveralls/boto3 dependency conflict (#93) <Aliaksei Urbanski>
 
 
 3.1.0 (2019-06-16)
