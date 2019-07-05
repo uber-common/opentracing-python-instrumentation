@@ -53,9 +53,9 @@ after_success:
 deploy:
   provider: pypi
   distributions: 'sdist bdist_wheel'
-  user: 'Your username'
+  user: jaegerbot
   password:
-    secure: 'Your encrypted password'
+    secure: aNbg/EKD5xH9FmBEts0668KectIxCewHt5+jwMaOfOJ4t1HfgnBYRHszW41GwEYvK23rrgo95vbIq3+xOqxuEFXGlXFNWevuM9idB9VfFH1ijee7rUfFvsH++BxLirbYTVkHHg6cq8TjVIgd/ATwJoI9it1N82j0d/rIUsOjUdEa9dm9wHTTj7yUbcHrARH7Bo44VnJpbwgz2yNuxo1tiO8CatP9zj8DydhmQlASM1IMJrN5tRwlTZayYDKTVyi/OL3Zi9rzIWxT4V3I3fkbp+YH9nZOTboN3UJlL1DcZWBNN6wcIGm9b2bLi+Guhzduxz+ybN1sTr1hed+f2onTH3H2WKKgfqrdgn+7URCc8EWlP76Fu4U6HgG3k8om+hDmJ5eqMF2Mm7NYuWbz2bDbqlTJtbPe6118l4DoomMCcnD+k18czjFyI1dsE5Uj16GWQz3FWZhm1bovhit8Wemnhjxrk/1q4klPrQnNLcgSSrYDxblUp816NG6/spaws+7/BpaUbZLF+ARL2cNWS5Tzfi1vQhRaSuLbkHdxOEbmGEbhf9LQEH0ax2VRSgjMWEY3LRlj4K882Jjv39tlZ8YFbW01ll212nU4xg+fhYPdkVhG+OFNgFFMKqnNVzgZKNje5RQ8/g3+7u2LkcL9QiimY1SFL/mF0ckpRN6KbB0AhMc=
   on:
     tags: true
     python: '3.7'
