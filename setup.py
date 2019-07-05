@@ -5,7 +5,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='opentracing_instrumentation',
-    version='3.1.0',
+    version='3.1.1.dev0',
     author='Yuri Shkuro',
     author_email='ys@uber.com',
     description='Tracing Instrumentation using OpenTracing API '
