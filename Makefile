@@ -34,8 +34,6 @@ install-deps:
 	pip install -U --upgrade-strategy eager -r requirements-test.txt
 	python setup.py develop
 
-install-ci: install-deps
-
 clean: clean-build clean-pyc clean-test
 
 clean-build:
