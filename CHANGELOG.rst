@@ -6,7 +6,7 @@ History
 3.1.2 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Removed support for Python 3.4
 
 
 3.1.1 (2019-07-05)
