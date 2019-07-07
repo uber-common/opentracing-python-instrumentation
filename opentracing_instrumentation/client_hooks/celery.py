@@ -51,11 +51,9 @@ def task_prerun_handler(task, task_id, **kwargs):
     if request.delivery_info.get('is_eager'):
         child_of = get_current_span()
     else:
-        if hasattr(request, 'headers'):
+        if getattr(request, 'headers', None) is not None:
             # Celery 3.x
-            parent_span_context = (
-                request.headers and request.headers.get('parent_span_context')
-            )
+            parent_span_context = request.headers.get('parent_span_context')
         else:
             # Celery 4.x
             parent_span_context = getattr(request, 'parent_span_context', None)
