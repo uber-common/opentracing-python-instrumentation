@@ -1,4 +1,5 @@
-[![PyPI version][pypi-img]][pypi] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
+[![PyPI version][pypi-img]][pypi] [![Python versions][pyver-img]][pypi] [![Pypi Downloads][pydl-img]][pypi] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] 
+
 
 # opentracing-python-instrumentation
 
@@ -245,3 +246,5 @@ tox
 [pypi]: https://pypi.python.org/pypi/opentracing_instrumentation
 [cov-img]: https://coveralls.io/repos/github/uber-common/opentracing-python-instrumentation/badge.svg
 [cov]: https://coveralls.io/github/uber-common/opentracing-python-instrumentation
+[pyver-img]: https://img.shields.io/pypi/pyversions/opentracing-instrumentation.svg 
+[pydl-img]: https://img.shields.io/pypi/dm/opentracing-instrumentation.svg 
