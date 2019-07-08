@@ -3,12 +3,18 @@ import mock
 import pytest
 
 from celery import Celery
-from celery.signals import after_task_publish, task_prerun, task_postrun
+from celery.signals import (
+    before_task_publish, after_task_publish, task_postrun
+)
 from celery.states import SUCCESS, FAILURE
+from celery.worker import state as celery_worker_state
 from kombu import Connection
 from opentracing.ext import tags
 
 from opentracing_instrumentation.client_hooks import celery as celery_hooks
+
+
+CELERY_3 = celery_module.__version__.split('.', 1)[0] == '3'
 
 
 @pytest.fixture(autouse=True, scope='module')
@@ -28,7 +34,10 @@ def assert_span(span, result, operation, span_kind):
     assert span.tags.get('celery.task_id') == result.task_id
 
 
-def _test_foo_task(celery, task_error):
+@mock.patch(
+    'celery.worker.job.logger' if CELERY_3 else 'celery.app.trace.logger'
+)
+def _test_foo_task(celery, task_error, celery_logger):
 
     @celery.task(name='foo')
     def foo():
@@ -41,13 +50,18 @@ def _test_foo_task(celery, task_error):
     assert foo.called
     if task_error:
         assert result.status == FAILURE
+        if not (
+            CELERY_3 and celery.conf.defaults[0].get('CELERY_ALWAYS_EAGER')
+        ):
+            celery_logger.log.assert_called_once()
     else:
         assert result.status == SUCCESS
+        celery_logger.log.assert_not_called()
 
     return result
 
 
-def _test(celery, tracer, task_error):
+def _test_with_instrumented_client(celery, tracer, task_error):
     result = _test_foo_task(celery, task_error)
 
     span_server, span_client = tracer.recorder.get_spans()
@@ -57,6 +71,27 @@ def _test(celery, tracer, task_error):
 
     assert_span(span_client, result, 'apply_async', tags.SPAN_KIND_RPC_CLIENT)
     assert_span(span_server, result, 'run', tags.SPAN_KIND_RPC_SERVER)
+
+
+@mock.patch(
+    'celery.app.task.Task.apply_async', new=celery_hooks._task_apply_async
+)
+def _test_with_regular_client(celery, tracer, task_error):
+    before_task_publish.disconnect(celery_hooks.before_task_publish_handler)
+    try:
+        result = _test_foo_task(celery, task_error)
+
+        spans = tracer.recorder.get_spans()
+        assert len(spans) == 1
+
+        span = spans[0]
+        assert span.parent_id is None
+        assert_span(span, result, 'run', tags.SPAN_KIND_RPC_SERVER)
+    finally:
+        before_task_publish.connect(celery_hooks.before_task_publish_handler)
+
+
+TEST_METHODS = _test_with_instrumented_client, _test_with_regular_client
 
 
 def is_rabbitmq_running():
@@ -70,7 +105,8 @@ def is_rabbitmq_running():
 @pytest.mark.skipif(not is_rabbitmq_running(),
                     reason='RabbitMQ is not running or cannot connect')
 @pytest.mark.parametrize('task_error', (False, True))
-def test_celery_with_rabbitmq(tracer, task_error):
+@pytest.mark.parametrize('test_method', TEST_METHODS)
+def test_celery_with_rabbitmq(test_method, tracer, task_error):
     celery = Celery(
         'test',
 
@@ -79,11 +115,7 @@ def test_celery_with_rabbitmq(tracer, task_error):
         # For Celery 4.x we need redis:// since with RPC we can
         # correctly assert status only for the first one task.
         # Feel free to suggest a better solution here.
-        backend=(
-            'rpc://'
-            if celery_module.__version__.split('.', 1)[0] == '3' else
-            'redis://'
-        ),
+        backend='rpc://' if CELERY_3 else 'redis://',
 
         # avoiding CDeprecationWarning
         changes={
@@ -93,6 +125,7 @@ def test_celery_with_rabbitmq(tracer, task_error):
 
     @after_task_publish.connect
     def run_worker(**kwargs):
+        celery_worker_state.should_stop = False
         after_task_publish.disconnect(run_worker)
         worker = celery.Worker(concurrency=1,
                                pool_cls='solo',
@@ -103,6 +136,7 @@ def test_celery_with_rabbitmq(tracer, task_error):
 
         @task_postrun.connect
         def stop_worker_soon(**kwargs):
+            celery_worker_state.should_stop = True
             task_postrun.disconnect(stop_worker_soon)
             if hasattr(worker.consumer, '_pending_operations'):
                 # Celery 4.x
@@ -122,7 +156,7 @@ def test_celery_with_rabbitmq(tracer, task_error):
 
         worker.start()
 
-    _test(celery, tracer, task_error)
+    test_method(celery, tracer, task_error)
 
 
 @pytest.fixture
@@ -136,28 +170,9 @@ def celery_eager():
 
 
 @pytest.mark.parametrize('task_error', (False, True))
-def test_celery_eager(celery_eager, tracer, task_error):
-    _test(celery_eager, tracer, task_error)
-
-
-@pytest.mark.parametrize('task_error', (False, True))
-@mock.patch('opentracing_instrumentation.client_hooks.celery.span_in_context')
-def test_celery_run_without_parent_span(span_in_context_mock, celery_eager,
-                                        tracer, task_error):
-
-    def task_prerun_hook(task, **kwargs):
-        task.request.delivery_info['is_eager'] = False
-
-    task_prerun.connect(task_prerun_hook)
-    task_prerun.receivers = list(reversed(task_prerun.receivers))
-    try:
-        result = _test_foo_task(celery_eager, task_error)
-    finally:
-        task_prerun.disconnect(task_prerun_hook)
-
-    span_server = tracer.recorder.get_spans()[0]
-    assert span_server.parent_id is None
-    assert_span(span_server, result, 'run', tags.SPAN_KIND_RPC_SERVER)
+@pytest.mark.parametrize('test_method', TEST_METHODS)
+def test_celery_eager(test_method, celery_eager, tracer, task_error):
+    test_method(celery_eager, tracer, task_error)
 
 
 @mock.patch.object(celery_hooks, 'patcher')
