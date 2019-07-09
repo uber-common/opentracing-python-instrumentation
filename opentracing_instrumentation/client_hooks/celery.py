@@ -110,17 +110,4 @@ class CeleryPatcher(Patcher):
         task_failure.disconnect(task_failure_handler)
 
 
-patcher = CeleryPatcher()
-
-
-def set_patcher(custom_patcher):
-    global patcher
-    patcher = custom_patcher
-
-
-def install_patches():
-    patcher.install_patches()
-
-
-def reset_patches():
-    patcher.reset_patches()
+CeleryPatcher.configure_hook_module(globals())

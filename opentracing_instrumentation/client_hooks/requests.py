@@ -116,13 +116,4 @@ class RequestsPatcher(Patcher):
                                        scheme=self.scheme)
 
 
-patcher = RequestsPatcher()
-
-
-def set_patcher(custom_patcher):
-    global patcher
-    patcher = custom_patcher
-
-
-def install_patches():
-    patcher.install_patches()
+RequestsPatcher.configure_hook_module(globals())

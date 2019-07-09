@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Uber Technologies, Inc.
+# Copyright (c) 2015,2019 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,26 +26,35 @@ from opentracing.ext import tags as ext_tags
 
 
 from .. import utils
-from ._singleton import singleton
 from ._current_span import current_span_func
+from ._patcher import Patcher
 
 log = logging.getLogger(__name__)
 
+try:
+    from sqlalchemy.engine import Engine
+    from sqlalchemy import event
+except ImportError:  # pragma: no cover
+    pass
 
-@singleton
-def install_patches():
-    try:
-        from sqlalchemy.engine import Engine
-        from sqlalchemy import event
-    except ImportError:
-        # If SQLAlchemy cannot be imported, then the project we are
-        # instrumenting does not depend on it and we do not need to install
-        # the SQL hooks.
-        return
 
-    log.info('Instrumenting SQL methods for tracing')
+class SQLAlchemyPatcher(Patcher):
+    applicable = 'event' in globals()
 
-    @event.listens_for(Engine, 'before_cursor_execute')
+    def _install_patches(self):
+        log.info('Instrumenting SQLAlchemy for tracing')
+        event.listen(Engine, 'before_cursor_execute',
+                     self.before_cursor_execute)
+        event.listen(Engine, 'after_cursor_execute',
+                     self.after_cursor_execute)
+
+    def _reset_patches(self):
+        event.remove(Engine, 'before_cursor_execute',
+                     self.before_cursor_execute)
+        event.remove(Engine, 'after_cursor_execute',
+                     self.after_cursor_execute)
+
+    @staticmethod
     def before_cursor_execute(conn, cursor, statement, parameters, context,
                               executemany):
         operation = 'SQL'
@@ -60,9 +69,12 @@ def install_patches():
             span.set_tag('sql', statement)
         context.opentracing_span = span
 
-    @event.listens_for(Engine, 'after_cursor_execute')
+    @staticmethod
     def after_cursor_execute(conn, cursor, statement, parameters, context,
                              executemany):
         if hasattr(context, 'opentracing_span') and context.opentracing_span:
             context.opentracing_span.finish()
             context.opentracing_span = None
+
+
+SQLAlchemyPatcher.configure_hook_module(globals())

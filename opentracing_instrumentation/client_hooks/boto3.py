@@ -67,17 +67,4 @@ class Boto3Patcher(Patcher):
         return call_wrapper
 
 
-patcher = Boto3Patcher()
-
-
-def set_patcher(custom_patcher):
-    global patcher
-    patcher = custom_patcher
-
-
-def install_patches():
-    patcher.install_patches()
-
-
-def reset_patches():
-    patcher.reset_patches()
+Boto3Patcher.configure_hook_module(globals())
