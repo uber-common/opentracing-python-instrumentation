@@ -22,17 +22,11 @@ import mock
 import psycopg2 as psycopg2_client
 import pytest
 from psycopg2 import extensions as pg_extensions, sql
-from sqlalchemy import (
-    Column,
-    Integer,
-    MetaData,
-    String,
-    Table,
-    create_engine,
-)
-from sqlalchemy.orm import mapper, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from opentracing_instrumentation.client_hooks import psycopg2
+from .sql_common import metadata, User
 
 
 SKIP_REASON = 'Postgres is not running or cannot connect'
@@ -60,25 +54,6 @@ def session():
 @pytest.fixture(autouse=True)
 def patch_postgres():
     psycopg2.install_patches()
-
-
-metadata = MetaData()
-user = Table('user', metadata,
-             Column('id', Integer, primary_key=True),
-             Column('name', String(50)),
-             Column('fullname', String(50)),
-             Column('password', String(12)))
-
-
-class User(object):
-
-    def __init__(self, name, fullname, password):
-        self.name = name
-        self.fullname = fullname
-        self.password = password
-
-
-mapper(User, user)
 
 
 @pytest.fixture()
