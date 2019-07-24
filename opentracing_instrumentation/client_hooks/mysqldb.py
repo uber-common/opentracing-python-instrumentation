@@ -1,4 +1,4 @@
-# Copyright (c) 2015 Uber Technologies, Inc.
+# Copyright (c) 2015,2019 Uber Technologies, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
 from __future__ import absolute_import
 from ._dbapi2 import ContextManagerConnectionWrapper as ConnectionWrapper
 from ._dbapi2 import ConnectionFactory
-from ._singleton import singleton
+from ._patcher import Patcher
 
 # Try to save the original entry points
 try:
@@ -32,16 +32,21 @@ else:
     _MySQLdb_connect = MySQLdb.connect
 
 
-@singleton
-def install_patches():
-    try:
-        import MySQLdb
-    except ImportError:  # pragma: no cover
-        return
+class MySQLdbPatcher(Patcher):
+    applicable = '_MySQLdb_connect' in globals()
 
-    factory = ConnectionFactory(connect_func=MySQLdb.connect,
-                                module_name='MySQLdb',
-                                conn_wrapper_ctor=ConnectionWrapper)
-    setattr(MySQLdb, 'connect', factory)
-    if hasattr(MySQLdb, 'Connect'):
-        setattr(MySQLdb, 'Connect', factory)
+    def _install_patches(self):
+        factory = ConnectionFactory(connect_func=MySQLdb.connect,
+                                    module_name='MySQLdb',
+                                    conn_wrapper_ctor=ConnectionWrapper)
+        MySQLdb.connect = factory
+        if hasattr(MySQLdb, 'Connect'):
+            MySQLdb.Connect = factory
+
+    def _reset_patches(self):
+        MySQLdb.connect = _MySQLdb_connect
+        if hasattr(MySQLdb, 'Connect'):
+            MySQLdb.Connect = _MySQLdb_connect
+
+
+MySQLdbPatcher.configure_hook_module(globals())

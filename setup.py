@@ -52,6 +52,7 @@ setup(
             'flake8-quotes',
             'mock',
             'moto',
+            'MySQL-python; python_version=="2.7"',
             'psycopg2-binary',
             'sqlalchemy>=1.2.0',
             'pytest',
