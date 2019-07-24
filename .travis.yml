@@ -17,13 +17,15 @@ install:
 
 services:
   - docker
+  - mysql
   - postgresql
   - rabbitmq
   - redis-server
 
 before_script:
   - docker-compose up -d dynamodb
-  - psql -c 'create database test;' -U postgres
+  - mysql -e 'CREATE DATABASE test;'
+  - psql -c 'CREATE DATABASE test;' -U postgres
 
   # waiting for DynamoDB
   - while [[ $(curl -so /dev/null -w '%{response_code}' localhost:8000) != '400' ]]; do sleep 1; done

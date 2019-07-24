@@ -153,7 +153,8 @@ class ConnectionFactory(object):
             if 'conv' in safe_kwargs:  # don't log conversion functions
                 del safe_kwargs['conv']
         connect_params = (args, safe_kwargs) if args or safe_kwargs else None
-        with func_span(self._connect_func_name):
+        tags = {ext_tags.SPAN_KIND: ext_tags.SPAN_KIND_RPC_CLIENT}
+        with func_span(self._connect_func_name, tags=tags):
             return self._wrapper_ctor(
                 connection=self._connect_func(*args, **kwargs),
                 module_name=self._module_name,
