@@ -54,7 +54,7 @@ setup(
             'moto',
             'MySQL-python; python_version=="2.7"',
             'psycopg2-binary',
-            'sqlalchemy>=1.2.0',
+            'sqlalchemy>=1.3.7',
             'pytest',
             'pytest-cov',
             'pytest-localserver',
@@ -64,6 +64,7 @@ setup(
             'redis',
             'Sphinx',
             'sphinx_rtd_theme',
+            'testfixtures',
         ]
     },
 )
