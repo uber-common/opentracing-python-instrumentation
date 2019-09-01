@@ -23,16 +23,25 @@ services:
   - redis-server
 
 before_script:
-  - docker-compose up -d dynamodb
+  - docker-compose up -d localstack
   - mysql -e 'CREATE DATABASE test;'
   - psql -c 'CREATE DATABASE test;' -U postgres
 
-  # waiting for DynamoDB
-  - while [[ $(curl -so /dev/null -w '%{response_code}' localhost:8000) != '400' ]]; do sleep 1; done
+  # waiting for the DynamoDB mock
+  - |
+    while [[ $(curl -so /dev/null -w '%{response_code}' localhost:4569) != '502' ]]
+    do
+        echo 'waiting 1 sec for DynamoDB...'
+        sleep 1
+    done
 
-  # workaround for Travis CI issue #7940
-  # https://github.com/travis-ci/travis-ci/issues/7940
-  - sudo rm -f /etc/boto.cfg
+  # waiting for the S3 mock
+  - |
+    while [[ $(curl -so /dev/null -w '%{response_code}' localhost:4572) != '200' ]]
+    do
+        echo 'waiting 1 sec for S3...'
+        sleep 1
+    done
 
 script:
   - tox

@@ -42,9 +42,10 @@ def test_db(tracer, session):
     session.commit()
 
     spans = tracer.recorder.get_spans()
-    assert len(spans) == 3
+    assert len(spans) == 4
 
-    sql_pragma_span, sql_create_span, sql_insert_span = spans
-    assert_span(sql_pragma_span, 'PRAGMA')
-    assert_span(sql_create_span, 'CREATE')
-    assert_span(sql_insert_span, 'INSERT')
+    pragma_span_1, pragma_span_2, create_span, insert_span = spans
+    assert_span(pragma_span_1, 'PRAGMA')
+    assert_span(pragma_span_2, 'PRAGMA')
+    assert_span(create_span, 'CREATE')
+    assert_span(insert_span, 'INSERT')

@@ -22,15 +22,31 @@ import opentracing
 import pytest
 from basictracer import BasicTracer
 from basictracer.recorder import InMemoryRecorder
+from opentracing.scope_managers.tornado import TornadoScopeManager
 
 
-@pytest.fixture
-def tracer():
-    dummy_tracer = BasicTracer(recorder=InMemoryRecorder())
+def _get_tracers(scope_manager=None):
+    dummy_tracer = BasicTracer(recorder=InMemoryRecorder(),
+                               scope_manager=scope_manager)
     dummy_tracer.register_required_propagators()
     old_tracer = opentracing.tracer
     opentracing.tracer = dummy_tracer
 
+    return old_tracer, dummy_tracer
+
+
+@pytest.fixture
+def tracer():
+    old_tracer, dummy_tracer = _get_tracers()
+    try:
+        yield dummy_tracer
+    finally:
+        opentracing.tracer = old_tracer
+
+
+@pytest.fixture
+def thread_safe_tracer():
+    old_tracer, dummy_tracer = _get_tracers(TornadoScopeManager())
     try:
         yield dummy_tracer
     finally:

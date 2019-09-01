@@ -31,6 +31,14 @@ The following libraries are instrumented for tracing in this module:
  * Tornado HTTP client
  *  `redis`
 
+#### Limitations
+
+For some operations, `Boto3` uses `ThreadPoolExecutor` under the hood.
+So, in order to make it thread-safe, the instrumentation is implemented using
+`span_in_stack_context()` which
+[forces you](https://github.com/uber-common/opentracing-python-instrumentation#in-process-context-propagation)
+to use `TornadoScopeManager`.
+
 ### Server instrumentation
 
 For inbound requests a helper function `before_request` is provided for creating middleware for frameworks like Flask and uWSGI.
