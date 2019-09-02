@@ -3,10 +3,15 @@
 History
 -------
 
-3.1.2 (unreleased)
+3.2.0 (2019-09-02)
 ------------------
 
-- Removed support for Python 3.4
+- Improve support for Boto 3 and S3 (#102) <Aliaksei Urbanski>
+- Refactor MySQLdb hook (#100) <Aliaksei Urbanski>
+- Refactor SQLAlchemy hook (#98) <Aliaksei Urbanski>
+- Fix span context propagation for Celery (#97) <Aliaksei Urbanski>
+- Use tox for CI instead of travis's matrix (#96) <Asher Foa>
+- Remove support for Python 3.4 (#95) <Asher Foa>
 
 
 3.1.1 (2019-07-05)
