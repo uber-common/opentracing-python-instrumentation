@@ -153,7 +153,7 @@ And here's an example for middleware in Tornado-based app:
 
 import opentracing
 from opentracing.scope_managers.tornado import TornadoScopeManager
-from opentracing_instrumentation import span_in_stack_context
+from opentracing_instrumentation import span_in_stack_context, http_server
 
 
 opentracing.tracer = MyOpenTracingTracer(scope_manager=TornadoScopeManager())
