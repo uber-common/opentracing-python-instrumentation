@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 try:
     from sqlalchemy.engine import Engine
     from sqlalchemy import event
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 
 

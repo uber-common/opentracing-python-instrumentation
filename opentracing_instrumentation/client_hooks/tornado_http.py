@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 # Try to save the original types for Tornado
 try:
     import tornado.simple_httpclient
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 else:
     _SimpleAsyncHTTPClient_fetch_impl = \
@@ -51,7 +51,7 @@ else:
 
 try:
     import tornado.curl_httpclient
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 else:
     _CurlAsyncHTTPClient_fetch_impl = \
@@ -74,7 +74,7 @@ class TracedPatcherBuilder(object):
     def _tornado():
         try:
             import tornado.simple_httpclient as simple
-        except ImportError:  # pragma: no cover
+        except ImportError:
             pass
         else:
             new_fetch_impl = traced_fetch_impl(
@@ -84,7 +84,7 @@ class TracedPatcherBuilder(object):
 
         try:
             import tornado.curl_httpclient as curl
-        except ImportError:  # pragma: no cover
+        except ImportError:
             pass
         else:
             new_fetch_impl = traced_fetch_impl(
@@ -102,7 +102,7 @@ def install_patches():
 def reset_patchers():
     try:
         import tornado.simple_httpclient as simple
-    except ImportError:  # pragma: no cover
+    except ImportError:
         pass
     else:
         setattr(
@@ -112,7 +112,7 @@ def reset_patchers():
         )
     try:
         import tornado.curl_httpclient as curl
-    except ImportError:  # pragma: no cover
+    except ImportError:
         pass
     else:
         setattr(

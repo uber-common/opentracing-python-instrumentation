@@ -29,7 +29,7 @@ from .. import utils
 
 try:
     import redis
-except ImportError:  # pragma: no cover
+except ImportError:
     redis = None
 
 

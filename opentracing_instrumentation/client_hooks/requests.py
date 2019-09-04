@@ -38,7 +38,7 @@ log = logging.getLogger(__name__)
 # Try to save the original entry points
 try:
     import requests.adapters
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 else:
     _HTTPAdapter_send = requests.adapters.HTTPAdapter.send

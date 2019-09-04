@@ -40,10 +40,6 @@ setup(
     ],
     extras_require={
         'tests': [
-            # coveralls should be required before boto3
-            # to avoid dependency conflict for Python 2.7
-            'coveralls',
-
             'boto3',
             'botocore',
             'celery',

@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 from __future__ import absolute_import
-from psycopg2.sql import Composable
 from ._dbapi2 import ContextManagerConnectionWrapper as ConnectionWrapper
 from ._dbapi2 import ConnectionFactory, CursorWrapper, NO_ARG
 from ._singleton import singleton
@@ -27,7 +26,8 @@ from ._singleton import singleton
 # Try to save the original entry points
 try:
     import psycopg2.extensions
-except ImportError:  # pragma: no cover
+    from psycopg2.sql import Composable
+except ImportError:
     pass
 else:
     _psycopg2_connect = psycopg2.connect

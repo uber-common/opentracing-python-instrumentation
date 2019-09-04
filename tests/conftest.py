@@ -20,12 +20,13 @@
 
 import opentracing
 import pytest
-from basictracer import BasicTracer
-from basictracer.recorder import InMemoryRecorder
 from opentracing.scope_managers.tornado import TornadoScopeManager
 
 
 def _get_tracers(scope_manager=None):
+    from basictracer.recorder import InMemoryRecorder
+    from basictracer.tracer import BasicTracer
+
     dummy_tracer = BasicTracer(recorder=InMemoryRecorder(),
                                scope_manager=scope_manager)
     dummy_tracer.register_required_propagators()
