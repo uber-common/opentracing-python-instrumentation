@@ -16,7 +16,7 @@ try:
     from botocore.client import BaseClient
     from botocore.exceptions import ClientError
     from s3transfer.futures import BoundedExecutor
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 else:
     _service_action_call = ServiceAction.__call__

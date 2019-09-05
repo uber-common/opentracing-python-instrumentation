@@ -44,7 +44,7 @@ def before_request(request, tracer=None):
         the global opentracing.tracer will be used.
     :return: returns a new, already started span.
     """
-    if tracer is None:  # pragma: no cover
+    if tracer is None:
         tracer = opentracing.tracer
 
     # we need to prepare tags upfront, mainly because RPC_SERVER tag must be

@@ -26,7 +26,7 @@ from ._patcher import Patcher
 # Try to save the original entry points
 try:
     import MySQLdb
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 else:
     _MySQLdb_connect = MySQLdb.connect

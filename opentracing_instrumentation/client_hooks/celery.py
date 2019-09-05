@@ -12,7 +12,7 @@ try:
     from celery.signals import (
         before_task_publish, task_prerun, task_success, task_failure
     )
-except ImportError:  # pragma: no cover
+except ImportError:
     pass
 else:
     _task_apply_async = Task.apply_async
