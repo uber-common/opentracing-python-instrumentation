@@ -53,6 +53,9 @@ def db_span(sql_statement,
     if span is None:
         return empty_ctx_mgr()
 
+    if bytes is not str and isinstance(sql_statement, bytes):
+        sql_statement = sql_statement.decode('utf-8', errors='ignore')
+
     statement = sql_statement.strip()
     add_sql_tag = True
     if sql_statement in _TRANS_TAGS:

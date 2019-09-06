@@ -124,6 +124,8 @@ def test_install_patches_skip(factory_mock, *mocks):
 @pytest.mark.parametrize('query', [
     # plain string
     '''SELECT %s;''',
+    # bytes
+    b'SELECT %s;',
     # Unicode
     u'''SELECT %s; -- привет''',
     # Composed
@@ -136,7 +138,8 @@ def test_install_patches_skip(factory_mock, *mocks):
     sql.SQL('''SELECT {}''').format(sql.Literal('foobar')),
     # Placeholder
     sql.SQL('''SELECT {}''').format(sql.Placeholder())
-], ids=('str', 'unicode', 'Composed', 'Identifier', 'Literal', 'Placeholder'))
+], ids=('str', 'bytes', 'unicode', 'Composed',
+        'Identifier', 'Literal', 'Placeholder'))
 def test_execute_sql(tracer, engine, connection, method, query):
 
     # Check that executing with objects of ``sql.Composable`` subtypes doesn't
