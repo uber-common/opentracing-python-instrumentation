@@ -3,10 +3,11 @@
 History
 -------
 
-3.2.1 (unreleased)
+3.2.1 (2019-10-02)
 ------------------
 
-- Nothing changed yet.
+- Fix db_span function of _dbapi2 to work with bytes (#105) <Aliaksei Urbanski>
+- Fix handling of missing psycopg2 module (#104) <Aliaksei Urbanski>
 
 
 3.2.0 (2019-09-02)
