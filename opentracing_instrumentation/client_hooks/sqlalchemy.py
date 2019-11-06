@@ -22,7 +22,7 @@ from __future__ import absolute_import
 
 import logging
 
-from opentracing.ext import tags as ext_tags
+from opentracing import tags
 
 
 from .. import utils
@@ -64,9 +64,13 @@ class SQLAlchemyPatcher(Patcher):
                                    statement.split(' ', 1)[0].upper())
         span = utils.start_child_span(
             operation_name=operation, parent=current_span_func())
-        span.set_tag(ext_tags.SPAN_KIND, ext_tags.SPAN_KIND_RPC_CLIENT)
+        span.set_tag(tags.SPAN_KIND, tags.SPAN_KIND_RPC_CLIENT)
+        span.set_tag(tags.COMPONENT, 'sqlalchemy')
+        if conn.engine:
+            span.set_tag(tags.DATABASE_TYPE, conn.engine.name)
+            span.set_tag(tags.DATABASE_INSTANCE, repr(conn.engine.url))
         if statement:
-            span.set_tag('sql', statement)
+            span.set_tag(tags.DATABASE_STATEMENT, statement)
         context.opentracing_span = span
 
     @staticmethod

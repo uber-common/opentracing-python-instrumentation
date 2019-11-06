@@ -1,5 +1,5 @@
 import pytest
-
+import sqlalchemy.engine.url
 from opentracing.ext import tags
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -34,6 +34,9 @@ def patch_sqlalchemy():
 def assert_span(span, operation):
     assert span.operation_name == 'SQL ' + operation
     assert span.tags.get(tags.SPAN_KIND) == tags.SPAN_KIND_RPC_CLIENT
+    assert span.tags.get(tags.DATABASE_TYPE) == 'sqlite'
+    assert span.tags.get(tags.DATABASE_INSTANCE) == 'sqlite://'
+    assert span.tags.get(tags.COMPONENT) == 'sqlalchemy'
 
 
 def test_db(tracer, session):
@@ -49,3 +52,14 @@ def test_db(tracer, session):
     assert_span(pragma_span_2, 'PRAGMA')
     assert_span(create_span, 'CREATE')
     assert_span(insert_span, 'INSERT')
+
+
+def test_sqlalchemy_password_sanitization():
+    """This test is here as a check against SQLAlchemy to make sure that we
+    notice if the behavior of ``repr()`` on a URL object changes and starts to
+    include a password"""
+
+    url = sqlalchemy.engine.url.make_url(
+        'mysql://username:password@host/database')
+    assert 'password' not in repr(url)
+    assert repr(url) == 'mysql://username:***@host/database'
