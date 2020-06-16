@@ -3,10 +3,10 @@
 History
 -------
 
-3.2.2 (unreleased)
+3.3.0 (2020-06-16)
 ------------------
 
-- Nothing changed yet.
+- Add additional tags to SQLAlchemy instrumentation (#107) <Wyatt Anderson>
 
 
 3.2.1 (2019-10-02)
