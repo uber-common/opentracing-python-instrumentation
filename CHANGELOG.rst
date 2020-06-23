@@ -3,10 +3,10 @@
 History
 -------
 
-3.3.1 (unreleased)
+3.3.1 (2020-06-23)
 ------------------
 
-- Nothing changed yet.
+- Fix test hanging on waiting for DynamoDB (#112) <Aliaksei Urbanski>
 
 
 3.3.0 (2020-06-16)
