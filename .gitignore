@@ -10,6 +10,7 @@ __pycache__
 
 build/
 dist/
+.envrc
 
 # Unit test / coverage reports
 .pytest_cache/
