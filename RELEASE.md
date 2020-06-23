@@ -9,8 +9,9 @@ release
 git push origin master --follow-tags
 ```
 
-At this point Travis should start a [build][build] for the version tag and the last step
-`Python: 3.7 CELERY=4 COVER=1` should upload the release to `pypi.org`.
+At this point Travis should start a [build][] for the version tag and the last step
+`Python: 3.7 CELERY=4 COVER=1` should upload the release to [pypi][].
+
 Once that's done, switch back to development:
 
 ```shell
@@ -18,5 +19,6 @@ postrelease
 git push
 ```
 
-build: https://travis-ci.org/uber-common/opentracing-python-instrumentation
+[build]: https://travis-ci.org/uber-common/opentracing-python-instrumentation
+[pypi]: https://pypi.org/project/opentracing-instrumentation/
 
