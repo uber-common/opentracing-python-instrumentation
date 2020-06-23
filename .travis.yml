@@ -29,7 +29,7 @@ before_script:
 
   # waiting for the DynamoDB mock
   - |
-    while [[ $(curl -so /dev/null -w '%{response_code}' localhost:4569) != '502' ]]
+    while [[ $(curl -so /dev/null -w '%{response_code}' localhost:4569) != '400' ]]
     do
         echo 'waiting 1 sec for DynamoDB...'
         sleep 1
