@@ -27,7 +27,7 @@ services:
       - "3306:3306"
 
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:0.10.9
     environment:
       - SERVICES=dynamodb,s3
     ports:

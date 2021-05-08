@@ -17,10 +17,35 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
+import six
+import sys
 import opentracing
 import pytest
-from opentracing.scope_managers.tornado import TornadoScopeManager
+try:
+    import tornado
+except ImportError:
+    stack_context_support = False
+else:
+    stack_context_support = tornado.version_info < (6, 0, 0, 0)
+
+collect_ignore = []
+
+
+if not stack_context_support:
+    collect_ignore.extend([
+        'opentracing_instrumentation/test_tornado_http.py',
+        # XXX: boto3 instrumentation relies on stack_context now
+        'opentracing_instrumentation/test_boto3.py',
+        'opentracing_instrumentation/test_thread_safe_request_context.py',
+        'opentracing_instrumentation/test_tornado_request_context.py',
+        'opentracing_instrumentation/test_traced_function_decorator_tornado_coroutines.py',
+    ])
+
+if six.PY2:
+    collect_ignore.extend([
+        'opentracing_instrumentation/test_asyncio_request_context.py',
+        'opentracing_instrumentation/test_tornado_asyncio_http.py',
+    ])
 
 
 def _get_tracers(scope_manager=None):
@@ -45,10 +70,30 @@ def tracer():
         opentracing.tracer = old_tracer
 
 
-@pytest.fixture
-def thread_safe_tracer():
-    old_tracer, dummy_tracer = _get_tracers(TornadoScopeManager())
-    try:
-        yield dummy_tracer
-    finally:
-        opentracing.tracer = old_tracer
+if six.PY3:
+    from opentracing.scope_managers.asyncio import AsyncioScopeManager
+    asyncio_scope_managers = [AsyncioScopeManager]
+
+    if sys.version_info[:2] >= (3, 7):
+        from opentracing.scope_managers.contextvars import \
+            ContextVarsScopeManager
+        # ContextVarsScopeManager is recommended scope manager for
+        # asyncio applications, but it works with python 3.7.x and higher.
+        asyncio_scope_managers.append(
+            ContextVarsScopeManager
+        )
+
+    @pytest.fixture(params=asyncio_scope_managers)
+    def asyncio_scope_manager(request):
+        return request.param()
+
+if stack_context_support:
+    from opentracing.scope_managers.tornado import TornadoScopeManager
+
+    @pytest.fixture
+    def thread_safe_tracer():
+        old_tracer, dummy_tracer = _get_tracers(TornadoScopeManager())
+        try:
+            yield dummy_tracer
+        finally:
+            opentracing.tracer = old_tracer

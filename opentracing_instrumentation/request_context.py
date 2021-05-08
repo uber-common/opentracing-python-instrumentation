@@ -23,9 +23,7 @@ from builtins import object
 import threading
 
 import opentracing
-from opentracing.scope_managers.tornado import TornadoScopeManager
-from opentracing.scope_managers.tornado import tracer_stack_context
-from opentracing.scope_managers.tornado import ThreadSafeStackContext  # noqa
+from .tornado_context import span_in_stack_context  # noqa
 
 
 class RequestContext(object):
@@ -94,26 +92,6 @@ class RequestContextManager(object):
         return False
 
 
-class _TracerEnteredStackContext(object):
-    """
-    An entered tracer_stack_context() object.
-
-    Intended to have a ready-to-use context where
-    Span objects can be activated before the context
-    itself is returned to the user.
-    """
-
-    def __init__(self, context):
-        self._context = context
-        self._deactivation_cb = context.__enter__()
-
-    def __enter__(self):
-        return self._deactivation_cb
-
-    def __exit__(self, type, value, traceback):
-        return self._context.__exit__(type, value, traceback)
-
-
 def get_current_span():
     """
     Access current request context and extract current Span from it.
@@ -137,6 +115,8 @@ def span_in_context(span):
     Create a context manager that stores the given span in the thread-local
     request context. This function should only be used in single-threaded
     applications like Flask / uWSGI.
+
+    This function also compatible with asyncio.
 
     ## Usage example in WSGI middleware:
 
@@ -176,51 +156,3 @@ def span_in_context(span):
         return opentracing.Scope(None, None)
 
     return opentracing.tracer.scope_manager.activate(span, False)
-
-
-def span_in_stack_context(span):
-    """
-    Create Tornado's StackContext that stores the given span in the
-    thread-local request context. This function is intended for use
-    in Tornado applications based on IOLoop, although will work fine
-    in single-threaded apps like Flask, albeit with more overhead.
-
-    ## Usage example in Tornado application
-
-    Suppose you have a method `handle_request(request)` in the http server.
-    Instead of calling it directly, use a wrapper:
-
-    .. code-block:: python
-
-        from opentracing_instrumentation import request_context
-
-        @tornado.gen.coroutine
-        def handle_request_wrapper(request, actual_handler, *args, **kwargs)
-
-            request_wrapper = TornadoRequestWrapper(request=request)
-            span = http_server.before_request(request=request_wrapper)
-
-            with request_context.span_in_stack_context(span):
-                return actual_handler(*args, **kwargs)
-
-    :param span:
-    :return:
-        Return StackContext that wraps the request context.
-    """
-
-    if not isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
-        raise RuntimeError('scope_manager is not TornadoScopeManager')
-
-    # Enter the newly created stack context so we have
-    # storage available for Span activation.
-    context = tracer_stack_context()
-    entered_context = _TracerEnteredStackContext(context)
-
-    if span is None:
-        return entered_context
-
-    opentracing.tracer.scope_manager.activate(span, False)
-    assert opentracing.tracer.active_span is not None
-    assert opentracing.tracer.active_span is span
-
-    return entered_context

@@ -33,7 +33,7 @@ setup(
     install_requires=[
         'future',
         'wrapt',
-        'tornado>=4.1,<6',
+        'tornado>=4.1',
         'contextlib2',
         'opentracing>=2,<3',
         'six',
@@ -47,7 +47,10 @@ setup(
             'flake8',
             'flake8-quotes',
             'mock',
-            'moto',
+            # next major version is incompatible with python 3.5 because of
+            # cryptography library
+            'moto==1.3.16; python_version=="3.5"',
+            'moto; python_version!="3.5"',
             'MySQL-python; python_version=="2.7"',
             'psycopg2-binary',
             'sqlalchemy>=1.3.7',
@@ -61,6 +64,7 @@ setup(
             'Sphinx',
             'sphinx_rtd_theme',
             'testfixtures',
+            'pytest-asyncio; python_version>="3.4"',
         ]
     },
 )
