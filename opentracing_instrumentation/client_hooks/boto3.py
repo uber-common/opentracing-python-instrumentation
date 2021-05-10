@@ -2,7 +2,6 @@ from __future__ import absolute_import
 import logging
 
 from opentracing.ext import tags
-from tornado.stack_context import wrap as keep_stack_context
 
 from opentracing_instrumentation import utils
 from ..request_context import get_current_span, span_in_stack_context
@@ -10,6 +9,7 @@ from ._patcher import Patcher
 
 
 try:
+    from tornado.stack_context import wrap as keep_stack_context
     from boto3.resources.action import ServiceAction
     from boto3.s3 import inject as s3_functions
     from botocore import xform_name

@@ -21,10 +21,12 @@ from __future__ import absolute_import
 from builtins import str
 import functools
 import contextlib2
-import tornado.concurrent
 import opentracing
-from opentracing.scope_managers.tornado import TornadoScopeManager
+from . import tornado_context
 from . import get_current_span, span_in_stack_context, span_in_context, utils
+
+if tornado_context.is_tornado_supported():
+    import tornado.concurrent
 
 
 def func_span(func, tags=None, require_active_trace=False):
@@ -82,10 +84,17 @@ class _DummyStackContext(object):
 
 
 def _span_in_stack_context(span):
-    if isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
-        return span_in_stack_context(span)
-    else:
+    if not tornado_context.is_tornado_supported():
         return _DummyStackContext(span_in_context(span))
+    if not tornado_context.is_stack_context_supported():
+        return _DummyStackContext(span_in_context(span))
+    if not isinstance(
+            opentracing.tracer.scope_manager,
+            tornado_context.TornadoScopeManager
+    ):
+        return _DummyStackContext(span_in_context(span))
+
+    return span_in_stack_context(span)
 
 
 def traced_function(func=None, name=None, on_start=None,
@@ -158,7 +167,8 @@ def traced_function(func=None, name=None, on_start=None,
                 # Tornado co-routines usually return futures, so we must wait
                 # until the future is completed, in order to accurately
                 # capture the function's execution time.
-                if tornado.concurrent.is_future(res):
+                if tornado_context.is_tornado_supported() and \
+                        tornado.concurrent.is_future(res):
                     def done_callback(future):
                         deactivate_cb()
                         exception = future.exception()
