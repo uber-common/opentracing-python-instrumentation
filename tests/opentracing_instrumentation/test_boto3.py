@@ -46,7 +46,7 @@ def create_users_table(dynamodb):
 @pytest.fixture
 def dynamodb_mock():
     import moto
-    with moto.mock_dynamodb2():
+    with moto.mock_dynamodb():
         dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         create_users_table(dynamodb)
         yield dynamodb

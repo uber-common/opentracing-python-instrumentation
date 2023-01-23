@@ -2,12 +2,13 @@ from __future__ import absolute_import
 import logging
 
 from opentracing.ext import tags
+from opentracing.scope_managers.tornado import TornadoScopeManager
+import opentracing.tracer
 from tornado.stack_context import wrap as keep_stack_context
 
 from opentracing_instrumentation import utils
-from ..request_context import get_current_span, span_in_stack_context
+from ..request_context import get_current_span, span_in_stack_context, span_in_context
 from ._patcher import Patcher
-
 
 try:
     from boto3.resources.action import ServiceAction
@@ -25,6 +26,28 @@ else:
 
 logger = logging.getLogger(__name__)
 
+class _DummyStackContext(object):
+    """
+    Stack context that restores previous scope after exit.
+    Will be returned by helper `_span_in_stack_context` when tracer scope
+    manager is not `TornadoScopeManager`.
+    """
+    def __init__(self, context):
+        self._context = context
+
+    def __enter__(self):
+        # Needed for compatibility with `span_in_stack_context`.
+        return lambda: None
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._context:
+            self._context.close()
+
+def _span_in_stack_context(span):
+    if isinstance(opentracing.tracer.scope_manager, TornadoScopeManager):
+        return span_in_stack_context(span)
+    else:
+        return _DummyStackContext(span_in_context(span))
 
 class Boto3Patcher(Patcher):
     applicable = '_service_action_call' in globals()
@@ -134,7 +157,7 @@ class Boto3Patcher(Patcher):
         span.set_tag(tags.COMPONENT, 'boto3')
         span.set_tag('boto3.service_name', service_name)
 
-        with span, span_in_stack_context(span):
+        with span, _span_in_stack_context(span):
             try:
                 response = original_func(*args, **kwargs)
             except ClientError as error:
