@@ -21,6 +21,7 @@
 import opentracing
 import pytest
 from opentracing.scope_managers.tornado import TornadoScopeManager
+from opentracing.scope_managers.asyncio import AsyncioScopeManager
 
 
 def _get_tracers(scope_manager=None):
@@ -48,6 +49,15 @@ def tracer():
 @pytest.fixture
 def thread_safe_tracer():
     old_tracer, dummy_tracer = _get_tracers(TornadoScopeManager())
+    try:
+        yield dummy_tracer
+    finally:
+        opentracing.tracer = old_tracer
+
+
+@pytest.fixture
+def thread_safe_tracer_non_tornado():
+    old_tracer, dummy_tracer = _get_tracers(AsyncioScopeManager())
     try:
         yield dummy_tracer
     finally:

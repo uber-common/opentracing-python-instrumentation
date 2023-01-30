@@ -46,7 +46,7 @@ def create_users_table(dynamodb):
 @pytest.fixture
 def dynamodb_mock():
     import moto
-    with moto.mock_dynamodb2():
+    with moto.mock_dynamodb():
         dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         create_users_table(dynamodb)
         yield dynamodb
@@ -175,24 +175,40 @@ def is_moto_presented():
 def test_boto3_dynamodb(thread_safe_tracer, dynamodb):
     _test_dynamodb(dynamodb, thread_safe_tracer)
 
+@pytest.mark.skipif(not is_dynamodb_running(),
+                    reason='DynamoDB is not running or cannot connect')
+def test_boto3_dynamodb_non_tornado(thread_safe_tracer_non_tornado, dynamodb):
+    _test_dynamodb(dynamodb, thread_safe_tracer_non_tornado)
 
 @pytest.mark.skipif(not is_moto_presented(),
                     reason='moto module is not presented')
 def test_boto3_dynamodb_with_moto(thread_safe_tracer, dynamodb_mock):
     _test_dynamodb(dynamodb_mock, thread_safe_tracer)
 
+@pytest.mark.skipif(not is_moto_presented(),
+                    reason='moto module is not presented')
+def test_boto3_dynamodb_with_moto_non_tornado(thread_safe_tracer_non_tornado, dynamodb_mock):
+    _test_dynamodb(dynamodb_mock, thread_safe_tracer_non_tornado)
 
 @pytest.mark.skipif(not is_s3_running(),
                     reason='S3 is not running or cannot connect')
 def test_boto3_s3(s3, thread_safe_tracer):
     _test_s3(s3, thread_safe_tracer)
 
+@pytest.mark.skipif(not is_s3_running(),
+                    reason='S3 is not running or cannot connect')
+def test_boto3_s3_non_tornado(s3, thread_safe_tracer_non_tornado):
+    _test_s3(s3, thread_safe_tracer_non_tornado)
 
 @pytest.mark.skipif(not is_moto_presented(),
                     reason='moto module is not presented')
 def test_boto3_s3_with_moto(s3_mock, thread_safe_tracer):
     _test_s3(s3_mock, thread_safe_tracer)
 
+@pytest.mark.skipif(not is_moto_presented(),
+                    reason='moto module is not presented')
+def test_boto3_s3_with_moto_non_tornado(s3_mock, thread_safe_tracer_non_tornado):
+    _test_s3(s3_mock, thread_safe_tracer_non_tornado)
 
 @testfixtures.log_capture()
 def test_boto3_s3_missing_func_instrumentation(capture):
